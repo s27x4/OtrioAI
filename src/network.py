@@ -106,3 +106,10 @@ def load_model(path: str) -> OtrioNet:
 def create_optimizer(model: OtrioNet, lr: float = 1e-3) -> torch.optim.Optimizer:
     """学習用 Optimizer を作成する"""
     return torch.optim.Adam(model.parameters(), lr=lr)
+
+
+def to_device(model: OtrioNet, device: str | None = None) -> torch.device:
+    """モデルを指定デバイスへ移動"""
+    dev = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
+    model.to(dev)
+    return dev
