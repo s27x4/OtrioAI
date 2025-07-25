@@ -23,7 +23,7 @@ class Player(Enum):
             return Player.NONE
 
 
-@dataclass
+@dataclass(frozen=True)
 class Move:
     row: int
     col: int
