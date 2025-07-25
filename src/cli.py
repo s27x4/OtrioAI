@@ -60,14 +60,19 @@ def main() -> None:
         type=int,
         default=None,
         metavar="N",
-        help="自己対戦と学習を N 回繰り返す",
+        help="自己対戦と学習を N 回繰り返す (デフォルトで GUI 表示)",
     )
     parser.add_argument(
         "--train-gui",
         type=int,
         default=None,
         metavar="N",
-        help="GUI を表示しつつ N 回学習を行う",
+        help="GUI を表示しつつ N 回学習を行う (互換用)",
+    )
+    parser.add_argument(
+        "--no-gui",
+        action="store_true",
+        help="学習中に GUI を表示しない",
     )
     parser.add_argument(
         "--load-buffer",
@@ -122,21 +127,21 @@ def main() -> None:
             buffer.add(self_play(model, num_simulations=cfg.num_simulations, num_players=cfg.num_players))
         loss = train_step(model, optimizer, buffer, cfg.batch_size)
         print(f"loss={loss:.4f}")
-    if args.train_loop:
-        total_loss = 0.0
-        for i in range(args.train_loop):
-            print(f"{i+1}/{args.train_loop} 回目の学習")
-            data = self_play(model, num_simulations=cfg.num_simulations, num_players=cfg.num_players)
-            buffer.add(data)
-            loss = train_step(model, optimizer, buffer, cfg.batch_size)
-            total_loss += loss
-            print(f"loss={loss:.4f}")
-        avg_loss = total_loss / args.train_loop
-        print(f"平均損失: {avg_loss:.4f}")
-    if args.train_gui:
+    if args.train_loop or args.train_gui:
         from .gui import train_gui_loop
 
-        train_gui_loop(args.train_gui, cfg)
+        loops = args.train_gui if args.train_gui is not None else args.train_loop
+        losses = train_gui_loop(
+            loops,
+            cfg,
+            headless=args.no_gui,
+            model=model,
+            optimizer=optimizer,
+            buffer=buffer,
+        )
+        if losses:
+            avg_loss = sum(losses) / len(losses)
+            print(f"平均損失: {avg_loss:.4f}")
 
     if args.play_model:
         play_vs_model(args.play_model, cfg)

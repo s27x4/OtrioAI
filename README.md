@@ -38,8 +38,9 @@ python -m src.cli --help
 
 - `--self-play` : 自己対戦を 1 局だけ行い、結果をリプレイバッファに追加します。
 - `--train` : リプレイバッファを用いて 1 ステップだけ学習します。
-- `--train-loop N` : 自己対戦と学習を N 回繰り返します。
-- `--train-gui N` : GUI を表示しながら N 回学習を実行します。
+- `--train-loop N` : 自己対戦と学習を N 回繰り返します。GUI はデフォルトで表示されます。
+- `--no-gui` : 学習中に GUI を表示しません。
+- `--train-gui N` : (旧) GUI を表示しながら N 回学習を実行します。
 - `--load-buffer PATH` : 既存のリプレイバッファを読み込むファイルを指定します。
 - `--load-state PATH` : 保存済みのモデルやオプティマイザ状態を読み込みます。
 - `--save-state PATH` : 学習後のモデル・バッファ・オプティマイザ状態を保存します。
@@ -92,6 +93,7 @@ curl -X POST -H "Content-Type: application/json" \
 ### GUI を使った学習進捗の表示
 
 `src/gui.py` では学習ループ中の損失をグラフ表示する簡易 GUI を提供しています。
+`src/cli.py` から `--train-loop` を指定した場合も同様に GUI が表示されます。
 以下のように実行することで、学習状況をリアルタイムで確認できます。
 
 ```bash

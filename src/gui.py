@@ -1,6 +1,7 @@
 import argparse
 from typing import List
 import matplotlib.pyplot as plt
+import torch
 
 from .config import load_config, Config
 from .training import self_play, ReplayBuffer, train_step
@@ -11,6 +12,9 @@ def train_gui_loop(
     num_iterations: int,
     cfg: Config | None = None,
     headless: bool = False,
+    model: OtrioNet | None = None,
+    optimizer: torch.optim.Optimizer | None = None,
+    buffer: ReplayBuffer | None = None,
 ) -> List[float]:
     """GUIで学習進捗を表示しながら学習を実行する"""
     if cfg is None:
@@ -19,9 +23,12 @@ def train_gui_loop(
         import matplotlib
         matplotlib.use("Agg")
 
-    model = OtrioNet(num_players=cfg.num_players)
-    optimizer = create_optimizer(model, lr=cfg.learning_rate)
-    buffer = ReplayBuffer(cfg.buffer_capacity)
+    if model is None:
+        model = OtrioNet(num_players=cfg.num_players)
+    if optimizer is None:
+        optimizer = create_optimizer(model, lr=cfg.learning_rate)
+    if buffer is None:
+        buffer = ReplayBuffer(cfg.buffer_capacity)
     losses: List[float] = []
 
     plt.ion()
