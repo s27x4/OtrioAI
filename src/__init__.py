@@ -1,5 +1,13 @@
 from .otrio import GameState, Move, Player
 from .mcts import MCTS, Node
+from .network import (
+    OtrioNet,
+    state_to_tensor,
+    policy_value,
+    loss_fn,
+    save_model,
+    load_model,
+)
 
 __all__ = [
     'GameState',
@@ -7,4 +15,10 @@ __all__ = [
     'Player',
     'MCTS',
     'Node',
+    'OtrioNet',
+    'state_to_tensor',
+    'policy_value',
+    'loss_fn',
+    'save_model',
+    'load_model',
 ]
