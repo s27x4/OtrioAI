@@ -12,15 +12,15 @@ class Player(Enum):
     NONE = 0
     PLAYER1 = 1
     PLAYER2 = 2
+    PLAYER3 = 3
+    PLAYER4 = 4
 
     @staticmethod
-    def opponent(player: 'Player') -> 'Player':
-        if player == Player.PLAYER1:
-            return Player.PLAYER2
-        elif player == Player.PLAYER2:
+    def next_player(player: 'Player', num_players: int = 2) -> 'Player':
+        if player == Player.NONE:
             return Player.PLAYER1
-        else:
-            return Player.NONE
+        next_val = player.value % num_players + 1
+        return Player(next_val)
 
 
 @dataclass(frozen=True)
@@ -36,6 +36,7 @@ class GameState:
     board: List[List[List[Player]]] = field(
         default_factory=lambda: [[[Player.NONE for _ in range(3)] for _ in range(3)] for _ in range(3)]
     )
+    num_players: int = 2
     current_player: Player = Player.PLAYER1
     move_history: List[Move] = field(default_factory=list)
     winner: Optional[Player] = None
@@ -68,7 +69,7 @@ class GameState:
         self.move_history.append(move)
         self._update_status(move.player)
         if not self.winner and not self.draw:
-            self.current_player = Player.opponent(self.current_player)
+            self.current_player = Player.next_player(self.current_player, self.num_players)
 
     def _update_status(self, player: Player) -> None:
         # 勝利判定: サイズ別の3目並べ
