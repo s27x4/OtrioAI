@@ -7,7 +7,47 @@ from src.training import (
     save_training_state,
     load_training_state,
 )
-from src.network import OtrioNet, create_optimizer
+from src.network import (
+    OtrioNet,
+    create_optimizer,
+    load_model,
+    policy_value,
+)
+from src.mcts import MCTS
+from src.otrio import GameState, Move, Player
+
+
+def _prompt_move(state: GameState) -> Move:
+    """ユーザーから合法手を取得する"""
+    while True:
+        try:
+            text = input("row col size > ")
+            r, c, s = map(int, text.strip().split())
+            if (
+                0 <= r < 3
+                and 0 <= c < 3
+                and 0 <= s < 3
+                and state.board[s][r][c] == Player.NONE
+            ):
+                return Move(r, c, s, state.current_player)
+        except Exception:
+            pass
+        print("無効な入力です。再入力してください")
+
+
+def play_vs_model(path: str, cfg) -> None:
+    """保存済みモデルと1局対戦する"""
+    model = load_model(path, num_players=cfg.num_players)
+    state = GameState(num_players=cfg.num_players)
+    mcts = MCTS(lambda s: policy_value(model, s), num_simulations=cfg.num_simulations)
+    while not state.winner and not state.draw:
+        if state.current_player == Player.PLAYER1:
+            move = _prompt_move(state)
+        else:
+            move, _ = mcts.run(state)
+            print(f"AI: size={move.size} pos=({move.row},{move.col})")
+        state.apply_move(move)
+    print(state.log())
 
 
 def main() -> None:
@@ -45,6 +85,13 @@ def main() -> None:
         type=str,
         default=None,
         help="学習後の状態を保存するパス",
+    )
+    parser.add_argument(
+        "--play-model",
+        type=str,
+        default=None,
+        metavar="PATH",
+        help="指定したモデルと対戦する",
     )
     args = parser.parse_args()
 
@@ -87,6 +134,9 @@ def main() -> None:
         from .gui import train_gui_loop
 
         train_gui_loop(args.train_gui, cfg)
+
+    if args.play_model:
+        play_vs_model(args.play_model, cfg)
 
     if args.save_state:
         save_training_state(model, optimizer, buffer, args.save_state)

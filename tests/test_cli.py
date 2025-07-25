@@ -25,3 +25,20 @@ def test_cli_train_loop(monkeypatch, capsys):
     main()
     out = capsys.readouterr().out
     assert "平均損失" in out or "loss=" in out
+
+
+def test_cli_play_model(monkeypatch, tmp_path):
+    def fake_load():
+        return Config(num_simulations=1, buffer_capacity=10, learning_rate=0.001, batch_size=1, num_players=2)
+
+    called = {}
+
+    def fake_play(path, cfg):
+        called['path'] = path
+
+    monkeypatch.setattr('src.cli.load_config', fake_load)
+    monkeypatch.setattr('src.cli.play_vs_model', fake_play)
+    model_path = tmp_path / 'model.pt'
+    monkeypatch.setattr(sys, 'argv', ['cli', '--play-model', str(model_path)])
+    main()
+    assert called.get('path') == str(model_path)

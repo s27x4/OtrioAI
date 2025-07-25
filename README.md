@@ -63,6 +63,32 @@ python -m src.cli --train-loop 10 --save-state checkpoint.pt
 保存したファイルは `--load-state` オプションで読み込めるため、
 途中から学習を再開することが可能です。
 
+### モデルを読み込んで対戦
+
+保存済みのモデルと対戦したい場合は次のように実行します。
+
+```bash
+python -m src.cli --play-model model.pt
+```
+
+`row col size` の形式で手を入力すると、先手としてプレイできます。
+
+### Flask サーバで対戦
+
+HTTP 経由でプレイしたい場合は Flask サーバを起動します。
+
+```bash
+python -m src.web --model model.pt
+```
+
+別ターミナルから以下のようにリクエストを送ることで手番を進められます。
+
+```bash
+curl -X POST http://localhost:5000/start
+curl -X POST -H "Content-Type: application/json" \
+    -d '{"row":0,"col":0,"size":0}' http://localhost:5000/move
+```
+
 ### GUI を使った学習進捗の表示
 
 `src/gui.py` では学習ループ中の損失をグラフ表示する簡易 GUI を提供しています。
