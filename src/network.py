@@ -133,8 +133,17 @@ def create_optimizer(model: OtrioNet, lr: float = 1e-3) -> torch.optim.Optimizer
     return torch.optim.Adam(model.parameters(), lr=lr)
 
 
-def to_device(model: OtrioNet, device: str | None = None) -> torch.device:
-    """モデルを指定デバイスへ移動"""
+def to_device(
+    model: OtrioNet,
+    device: str | None = None,
+    optimizer: torch.optim.Optimizer | None = None,
+) -> torch.device:
+    """モデルとオプティマイザを指定デバイスへ移動"""
     dev = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
     model.to(dev)
+    if optimizer is not None:
+        for state in optimizer.state.values():
+            for k, v in state.items():
+                if isinstance(v, torch.Tensor):
+                    state[k] = v.to(dev)
     return dev

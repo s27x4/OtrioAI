@@ -109,7 +109,7 @@ def main() -> None:
             learning_rate=cfg.learning_rate,
             buffer_capacity=cfg.buffer_capacity,
         )
-        to_device(model)
+        to_device(model, optimizer=optimizer)
     else:
         model = OtrioNet(num_players=cfg.num_players)
         to_device(model)
