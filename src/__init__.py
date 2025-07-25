@@ -1,4 +1,5 @@
 from .otrio import GameState, Move, Player
+from .otrio_env import OtrioBase, OtrioEnv
 from .mcts import MCTS, Node
 from .network import (
     OtrioNet,
@@ -19,6 +20,8 @@ __all__ = [
     'GameState',
     'Move',
     'Player',
+    'OtrioBase',
+    'OtrioEnv',
     'MCTS',
     'Node',
     'OtrioNet',
