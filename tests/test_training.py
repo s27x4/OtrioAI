@@ -25,3 +25,16 @@ def test_replay_buffer_and_train_step():
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     loss = train_step(model, optimizer, buffer, batch_size=1)
     assert isinstance(loss, float)
+
+
+def test_sample_empty_buffer():
+    buffer = ReplayBuffer(capacity=10)
+    assert buffer.sample(1) is None
+
+
+def test_train_step_empty_buffer():
+    model = OtrioNet()
+    buffer = ReplayBuffer(capacity=10)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    loss = train_step(model, optimizer, buffer, batch_size=1)
+    assert loss == 0.0
