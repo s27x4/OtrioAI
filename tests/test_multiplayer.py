@@ -11,3 +11,9 @@ def test_next_player_three_players():
     assert state.current_player == Player.PLAYER2
     state.apply_move(Move(0,0,1, state.current_player))
     assert state.current_player == Player.PLAYER3
+
+
+def test_clone_preserves_num_players():
+    state = GameState(num_players=4)
+    clone = state.clone()
+    assert clone.num_players == 4

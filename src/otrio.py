@@ -45,6 +45,7 @@ class GameState:
     def clone(self) -> 'GameState':
         new_state = GameState(
             board=[[row[:] for row in size] for size in self.board],
+            num_players=self.num_players,
             current_player=self.current_player,
             move_history=self.move_history[:],
             winner=self.winner,

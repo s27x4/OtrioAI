@@ -8,6 +8,7 @@ class Config:
     buffer_capacity: int = 10000
     num_simulations: int = 50
     batch_size: int = 32
+    num_players: int = 2
 
 
 def load_config(path: str = "config.yaml") -> Config:

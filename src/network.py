@@ -6,36 +6,35 @@ from typing import Dict, Tuple
 
 
 def state_to_tensor(state: GameState) -> torch.Tensor:
-    """GameState を多チャネル Tensor に変換する.
+    """GameState を多チャネル Tensor に変換する."""
 
-    チャネル構成:
-      0-2: PLAYER1 の size0-2
-      3-5: PLAYER2 の size0-2
-      6  : 現在の手番 (全マス同一値)
-    """
-    tensor = torch.zeros(7, 3, 3, dtype=torch.float32)
+    num_players = state.num_players
+    tensor = torch.zeros(num_players * 3 + 1, 3, 3, dtype=torch.float32)
+
     for size in range(3):
         for r in range(3):
             for c in range(3):
                 p = state.board[size][r][c]
-                if p == Player.PLAYER1:
-                    tensor[size, r, c] = 1.0
-                elif p == Player.PLAYER2:
-                    tensor[size + 3, r, c] = 1.0
-    if state.current_player == Player.PLAYER1:
-        tensor[6].fill_(1.0)
-    elif state.current_player == Player.PLAYER2:
-        tensor[6].fill_(0.0)
+                if p != Player.NONE:
+                    idx = (p.value - 1) * 3 + size
+                    tensor[idx, r, c] = 1.0
+
+    if num_players > 1:
+        val = 1.0 - (state.current_player.value - 1) / (num_players - 1)
     else:
-        tensor[6].fill_(0.5)
+        val = 1.0
+    tensor[-1].fill_(val)
+
     return tensor
 
 
 class OtrioNet(nn.Module):
-    def __init__(self):
+    def __init__(self, num_players: int = 2):
         super().__init__()
+        self.num_players = num_players
+        in_channels = num_players * 3 + 1
         self.backbone = nn.Sequential(
-            nn.Conv2d(7, 32, 3, padding=1),
+            nn.Conv2d(in_channels, 32, 3, padding=1),
             nn.ReLU(),
             nn.Conv2d(32, 64, 3, padding=1),
             nn.ReLU(),
@@ -97,8 +96,8 @@ def save_model(model: OtrioNet, path: str) -> None:
     torch.save(model.state_dict(), path)
 
 
-def load_model(path: str) -> OtrioNet:
-    model = OtrioNet()
+def load_model(path: str, num_players: int = 2) -> OtrioNet:
+    model = OtrioNet(num_players=num_players)
     model.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
     return model
 
