@@ -21,12 +21,12 @@
    - [x] 損失関数・Optimizer設定
    - [x] モデルの保存/読み込み
 
-4. [x] **自己対戦による学習ループ** [`training_loop.md`](training_loop.md)
+4. [x] **自己対戦による学習ループ** [`training_loop.md`](training_loop.md) ※確認済み
    - [x] 自己対戦の実行
    - [x] Replay Buffer の定義
    - [x] 学習データ作成とトレーニング
 
-5. [x] **モデルの評価と選別** [`evaluation.md`](evaluation.md)
+5. [x] **モデルの評価と選別** [`evaluation.md`](evaluation.md) ※確認済み
    - [x] 旧モデルとの対戦評価
    - [x] 勝率ログや比較結果の記録
 
