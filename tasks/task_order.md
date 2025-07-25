@@ -21,7 +21,7 @@
    - [x] 損失関数・Optimizer設定
    - [x] モデルの保存/読み込み
 
-4. [x] **自己対戦による学習ループ** [`training_loop.md`](training_loop.md)
+4. [x] **自己対戦による学習ループ** [`training_loop.md`](training_loop.md) ※確認済み
    - [x] 自己対戦の実行
    - [x] Replay Buffer の定義
    - [x] 学習データ作成とトレーニング
