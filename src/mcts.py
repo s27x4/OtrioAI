@@ -66,7 +66,8 @@ class MCTS:
             node.value_sum += value
             value = -value  # switch perspective
 
-    def run(self, state: GameState) -> Move:
+    def run(self, state: GameState) -> Tuple[Move, Dict[Move, int]]:
+        """状態 `state` から探索を行い、最善手と訪問回数分布を返す"""
         root = Node(state=state.clone())
         # initial expansion
         self.expand(root)
@@ -79,11 +80,20 @@ class MCTS:
                 search_path.append(node)
             # evaluation & expansion
             if node.state.winner or node.state.draw:
-                value = 1.0 if node.state.winner == search_path[0].state.current_player else -1.0 if node.state.winner else 0.0
+                value = (
+                    1.0
+                    if node.state.winner == search_path[0].state.current_player
+                    else -1.0
+                    if node.state.winner
+                    else 0.0
+                )
             else:
                 value = self.expand(node)
             # backup
             self.backup(search_path, value)
         # choose move with highest visit count
-        best_move, best_child = max(root.children.items(), key=lambda item: item[1].visit_count)
-        return best_move
+        best_move, _ = max(
+            root.children.items(), key=lambda item: item[1].visit_count
+        )
+        visit_counts = {m: c.visit_count for m, c in root.children.items()}
+        return best_move, visit_counts
