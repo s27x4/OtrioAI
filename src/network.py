@@ -94,3 +94,8 @@ def load_model(path: str) -> OtrioNet:
     model = OtrioNet()
     model.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
     return model
+
+
+def create_optimizer(model: OtrioNet, lr: float = 1e-3) -> torch.optim.Optimizer:
+    """学習用 Optimizer を作成する"""
+    return torch.optim.Adam(model.parameters(), lr=lr)
