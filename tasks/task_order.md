@@ -21,20 +21,20 @@
    - [x] 損失関数・Optimizer設定
    - [x] モデルの保存/読み込み
 
-4. [x] **自己対戦による学習ループ** [`training_loop.md`](training_loop.md)
+4. [x] **自己対戦による学習ループ** [`training_loop.md`](training_loop.md) ※確認済み
    - [x] 自己対戦の実行
    - [x] Replay Buffer の定義
    - [x] 学習データ作成とトレーニング
 
-5. [ ] **モデルの評価と選別** [`evaluation.md`](evaluation.md)
-   - [ ] 旧モデルとの対戦評価
-   - [ ] 勝率ログや比較結果の記録
+5. [x] **モデルの評価と選別** [`evaluation.md`](evaluation.md) ※確認済み
+   - [x] 旧モデルとの対戦評価
+   - [x] 勝率ログや比較結果の記録
 
-6. [ ] **補助機能や管理系** [`support.md`](support.md)
+ 6. [ ] **補助機能や管理系** [`support.md`](support.md)
    - [ ] ハイパーパラメータ設定ファイル
    - [ ] ログ記録と可視化
    - [ ] CLI あるいは Web UI
-   - [ ] テストケースの作成
+   - [x] テストケースの作成
 
 7. [ ] **追加で検討できる項目（オプション）** [`additional.md`](additional.md)
    - [ ] Data Augmentation
