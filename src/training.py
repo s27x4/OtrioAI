@@ -84,10 +84,14 @@ def train_step(
     batch_size: int,
 ) -> float:
     model.train()
+    device = next(model.parameters()).device
     sample = buffer.sample(batch_size)
     if sample is None:
         return 0.0
     states, policies, values = sample
+    states = states.to(device)
+    policies = policies.to(device)
+    values = values.to(device)
     optimizer.zero_grad()
     policy_logits, value_pred = model(states)
     loss = loss_fn(policy_logits, value_pred, policies, values)

@@ -89,10 +89,11 @@ class OtrioNet(nn.Module):
 
 def policy_value(model: OtrioNet, state: GameState) -> Tuple[Dict[Move, float], float]:
     model.eval()
+    device = next(model.parameters()).device
     with torch.no_grad():
-        tensor = state_to_tensor(state).unsqueeze(0)
+        tensor = state_to_tensor(state).unsqueeze(0).to(device)
         policy_logits, value = model(tensor)
-        policy = torch.softmax(policy_logits[0], dim=0)
+        policy = torch.softmax(policy_logits[0].cpu(), dim=0)
     moves = state.legal_moves()
     if not moves:
         return {}, value.item()
