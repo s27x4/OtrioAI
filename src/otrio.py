@@ -94,6 +94,30 @@ class GameState:
                 if all(self.board[size][r][c] == player for size in range(3)):
                     self.winner = player
                     return
+        # 大中小が縦・横・斜めに並ぶ勝利
+        line_coords = (
+            [(0, 0), (0, 1), (0, 2)],
+            [(1, 0), (1, 1), (1, 2)],
+            [(2, 0), (2, 1), (2, 2)],
+            [(0, 0), (1, 0), (2, 0)],
+            [(0, 1), (1, 1), (2, 1)],
+            [(0, 2), (1, 2), (2, 2)],
+            [(0, 0), (1, 1), (2, 2)],
+            [(0, 2), (1, 1), (2, 0)],
+        )
+        for coords in line_coords:
+            sizes = []
+            for r, c in coords:
+                s = next(
+                    (size for size in range(3) if self.board[size][r][c] == player),
+                    None,
+                )
+                if s is None:
+                    break
+                sizes.append(s)
+            if len(sizes) == 3 and (sizes == [0, 1, 2] or sizes == [2, 1, 0]):
+                self.winner = player
+                return
         # 引き分け判定
         if not any(
             self.board[size][r][c] == Player.NONE
