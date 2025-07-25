@@ -7,6 +7,7 @@ from .network import (
     loss_fn,
     save_model,
     load_model,
+    create_optimizer,
 )
 
 __all__ = [
@@ -21,4 +22,5 @@ __all__ = [
     'loss_fn',
     'save_model',
     'load_model',
+    'create_optimizer',
 ]

@@ -4,7 +4,7 @@ import torch
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from src.network import OtrioNet, state_to_tensor
+from src.network import OtrioNet, state_to_tensor, create_optimizer
 from src.otrio import GameState
 
 
@@ -21,3 +21,9 @@ def test_network_forward_shapes():
     policy, value = model(x)
     assert policy.shape == (1, 27)
     assert value.shape == (1,)
+
+
+def test_create_optimizer():
+    model = OtrioNet()
+    optim = create_optimizer(model, lr=0.001)
+    assert isinstance(optim, torch.optim.Optimizer)
