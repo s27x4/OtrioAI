@@ -11,17 +11,17 @@ def main() -> None:
     args = parser.parse_args()
 
     cfg = load_config()
-    model = OtrioNet()
+    model = OtrioNet(num_players=cfg.num_players)
     optimizer = create_optimizer(model, lr=cfg.learning_rate)
     buffer = ReplayBuffer(cfg.buffer_capacity)
 
     if args.self_play:
-        data = self_play(model, num_simulations=cfg.num_simulations)
+        data = self_play(model, num_simulations=cfg.num_simulations, num_players=cfg.num_players)
         buffer.add(data)
         print(f"{len(data)} 件のサンプルを生成しました")
     if args.train:
         if len(buffer) == 0:
-            buffer.add(self_play(model, num_simulations=cfg.num_simulations))
+            buffer.add(self_play(model, num_simulations=cfg.num_simulations, num_players=cfg.num_players))
         loss = train_step(model, optimizer, buffer, cfg.batch_size)
         print(f"loss={loss:.4f}")
 

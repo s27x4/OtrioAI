@@ -33,9 +33,11 @@ class ReplayBuffer:
         return len(self.data)
 
 
-def self_play(model: OtrioNet, num_simulations: int = 50) -> List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
+def self_play(
+    model: OtrioNet, num_simulations: int = 50, num_players: int = 2
+) -> List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
     """MCTS を用いた 1 局の自己対戦を行い、学習データを返す"""
-    state = GameState()
+    state = GameState(num_players=num_players)
     mcts = MCTS(lambda s: policy_value(model, s), num_simulations=num_simulations)
     history: List[Tuple[GameState, torch.Tensor]] = []
 
