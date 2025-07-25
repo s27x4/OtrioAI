@@ -20,8 +20,13 @@ class ReplayBuffer:
                 self.data.pop(0)
             self.data.append(sample)
 
-    def sample(self, batch_size: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        indices = random.sample(range(len(self.data)), batch_size)
+    def sample(self, batch_size: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None:
+        if len(self.data) == 0:
+            return None
+        if len(self.data) < batch_size:
+            indices = random.choices(range(len(self.data)), k=batch_size)
+        else:
+            indices = random.sample(range(len(self.data)), batch_size)
         states, policies, values = zip(*[self.data[i] for i in indices])
         return (
             torch.stack(states),
@@ -69,7 +74,10 @@ def train_step(
     batch_size: int,
 ) -> float:
     model.train()
-    states, policies, values = buffer.sample(batch_size)
+    sample = buffer.sample(batch_size)
+    if sample is None:
+        return 0.0
+    states, policies, values = sample
     optimizer.zero_grad()
     policy_logits, value_pred = model(states)
     loss = loss_fn(policy_logits, value_pred, policies, values)
