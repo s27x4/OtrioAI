@@ -15,6 +15,7 @@ from .evaluation import (
     evaluate_models,
     evaluate_and_select,
 )
+from .gui import train_gui_loop
 
 __all__ = [
     'GameState',
@@ -34,4 +35,5 @@ __all__ = [
     'play_match',
     'evaluate_models',
     'evaluate_and_select',
+    'train_gui_loop',
 ]

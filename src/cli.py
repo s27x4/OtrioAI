@@ -16,6 +16,13 @@ def main() -> None:
         help="自己対戦と学習を N 回繰り返す",
     )
     parser.add_argument(
+        "--train-gui",
+        type=int,
+        default=None,
+        metavar="N",
+        help="GUI を表示しつつ N 回学習を行う",
+    )
+    parser.add_argument(
         "--load-buffer",
         type=str,
         default=None,
@@ -50,6 +57,10 @@ def main() -> None:
             print(f"loss={loss:.4f}")
         avg_loss = total_loss / args.train_loop
         print(f"平均損失: {avg_loss:.4f}")
+    if args.train_gui:
+        from .gui import train_gui_loop
+
+        train_gui_loop(args.train_gui, cfg)
 
 
 if __name__ == "__main__":
