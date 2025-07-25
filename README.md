@@ -11,8 +11,8 @@ OtrioAI はボードゲーム **Otrio** を AI 学習させるための実験プ
 推奨 Python バージョンは 3.10 以上です。
 
 ## 実行方法
-まだ CLI や学習スクリプトはありませんが、`src/otrio.py` に簡易的なゲーム環境 `GameState` を用意しています。
-以下は利用例です。
+CLI は `src/cli.py` にあり、自己対戦や学習ステップを実行できます。`src/otrio.py` には簡易的なゲーム環境 `GameState` も用意しています。
+以下は `GameState` の利用例です。
 
 ```python
 from src.otrio import GameState
