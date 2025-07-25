@@ -38,3 +38,20 @@ def test_train_step_empty_buffer():
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     loss = train_step(model, optimizer, buffer, batch_size=1)
     assert loss == 0.0
+
+
+def test_replay_buffer_save_load(tmp_path):
+    model = OtrioNet(num_players=2)
+    buffer = ReplayBuffer(capacity=10)
+    samples = self_play(model, num_simulations=1, num_players=2)
+    buffer.add(samples)
+    path = tmp_path / "buffer.pt"
+    buffer.save(str(path))
+
+    loaded = ReplayBuffer(capacity=10)
+    loaded.load(str(path))
+    assert len(loaded) == len(buffer)
+    for a, b in zip(buffer.data, loaded.data):
+        assert torch.equal(a[0], b[0])
+        assert torch.equal(a[1], b[1])
+        assert torch.equal(a[2], b[2])

@@ -8,12 +8,16 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="OtrioAI CLI")
     parser.add_argument("--self-play", action="store_true", help="自己対戦を1局実行")
     parser.add_argument("--train", action="store_true", help="1ステップ学習を実行")
+    parser.add_argument("--load-buffer", type=str, help="バッファを読み込むパス")
+    parser.add_argument("--save-buffer", type=str, help="バッファを保存するパス")
     args = parser.parse_args()
 
     cfg = load_config()
     model = OtrioNet(num_players=cfg.num_players)
     optimizer = create_optimizer(model, lr=cfg.learning_rate)
     buffer = ReplayBuffer(cfg.buffer_capacity)
+    if args.load_buffer:
+        buffer.load(args.load_buffer)
 
     if args.self_play:
         data = self_play(model, num_simulations=cfg.num_simulations, num_players=cfg.num_players)
@@ -24,6 +28,9 @@ def main() -> None:
             buffer.add(self_play(model, num_simulations=cfg.num_simulations, num_players=cfg.num_players))
         loss = train_step(model, optimizer, buffer, cfg.batch_size)
         print(f"loss={loss:.4f}")
+
+    if args.save_buffer:
+        buffer.save(args.save_buffer)
 
 
 if __name__ == "__main__":

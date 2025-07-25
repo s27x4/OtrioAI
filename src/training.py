@@ -37,6 +37,14 @@ class ReplayBuffer:
     def __len__(self) -> int:
         return len(self.data)
 
+    def save(self, path: str) -> None:
+        """ReplayBuffer をファイルに保存する"""
+        torch.save(self.data, path)
+
+    def load(self, path: str) -> None:
+        """ファイルから ReplayBuffer を読み込む"""
+        self.data = torch.load(path, map_location=torch.device("cpu"))
+
 
 def self_play(
     model: OtrioNet, num_simulations: int = 50, num_players: int = 2
