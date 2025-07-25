@@ -24,7 +24,7 @@ def test_state_to_tensor_multi_players():
 
 
 def test_network_forward_shapes():
-    model = OtrioNet(num_players=2)
+    model = OtrioNet(num_players=2, num_blocks=2)
     state = GameState()
     x = state_to_tensor(state).unsqueeze(0)
     policy, value = model(x)
@@ -33,6 +33,6 @@ def test_network_forward_shapes():
 
 
 def test_create_optimizer():
-    model = OtrioNet(num_players=2)
+    model = OtrioNet(num_players=2, num_blocks=1)
     optim = create_optimizer(model, lr=0.001)
     assert isinstance(optim, torch.optim.Optimizer)

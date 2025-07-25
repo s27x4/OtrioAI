@@ -28,17 +28,42 @@ def state_to_tensor(state: GameState) -> torch.Tensor:
     return tensor
 
 
+class ResidualBlock(nn.Module):
+    """2層の畳み込みで残差接続を行うブロック"""
+
+    def __init__(self, channels: int):
+        super().__init__()
+        self.conv1 = nn.Conv2d(channels, channels, 3, padding=1)
+        self.bn1 = nn.BatchNorm2d(channels)
+        self.conv2 = nn.Conv2d(channels, channels, 3, padding=1)
+        self.bn2 = nn.BatchNorm2d(channels)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        residual = x
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = F.relu(out)
+        out = self.conv2(out)
+        out = self.bn2(out)
+        out += residual
+        out = F.relu(out)
+        return out
+
+
 class OtrioNet(nn.Module):
-    def __init__(self, num_players: int = 2):
+    def __init__(self, num_players: int = 2, num_blocks: int = 0):
         super().__init__()
         self.num_players = num_players
         in_channels = num_players * 3 + 1
-        self.backbone = nn.Sequential(
+        layers = [
             nn.Conv2d(in_channels, 32, 3, padding=1),
             nn.ReLU(),
             nn.Conv2d(32, 64, 3, padding=1),
             nn.ReLU(),
-        )
+        ]
+        for _ in range(num_blocks):
+            layers.append(ResidualBlock(64))
+        self.backbone = nn.Sequential(*layers)
         self.policy_head = nn.Sequential(
             nn.Conv2d(64, 2, 1),
             nn.ReLU(),
@@ -96,8 +121,8 @@ def save_model(model: OtrioNet, path: str) -> None:
     torch.save(model.state_dict(), path)
 
 
-def load_model(path: str, num_players: int = 2) -> OtrioNet:
-    model = OtrioNet(num_players=num_players)
+def load_model(path: str, num_players: int = 2, num_blocks: int = 0) -> OtrioNet:
+    model = OtrioNet(num_players=num_players, num_blocks=num_blocks)
     model.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
     return model
 
