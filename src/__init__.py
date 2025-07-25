@@ -9,6 +9,11 @@ from .network import (
     load_model,
     create_optimizer,
 )
+from .evaluation import (
+    play_match,
+    evaluate_models,
+    evaluate_and_select,
+)
 
 __all__ = [
     'GameState',
@@ -23,4 +28,7 @@ __all__ = [
     'save_model',
     'load_model',
     'create_optimizer',
+    'play_match',
+    'evaluate_models',
+    'evaluate_and_select',
 ]
