@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable, Dict, Optional, Tuple
 import math
+import torch
 
 from .otrio import GameState, Move, Player
 
@@ -30,6 +31,20 @@ class MCTS:
         self.policy_value_fn = policy_value_fn or self._uniform_policy_value
         self.num_simulations = num_simulations
         self.c_puct = c_puct
+
+    def _apply_dirichlet_noise(self, node: Node, alpha: float = 0.03) -> None:
+        """各子ノードの prior にディリクレノイズを加算し正規化"""
+        if not node.children:
+            return
+        dist = torch.distributions.dirichlet.Dirichlet(
+            torch.full((len(node.children),), alpha)
+        )
+        noise = dist.sample()
+        for child, n in zip(node.children.values(), noise):
+            child.prior += n.item()
+        total = sum(c.prior for c in node.children.values())
+        for child in node.children.values():
+            child.prior /= total
 
     def _uniform_policy_value(self, state: GameState) -> Tuple[Dict[Move, float], float]:
         moves = state.legal_moves()
@@ -71,6 +86,7 @@ class MCTS:
         root = Node(state=state.clone())
         # initial expansion
         self.expand(root)
+        self._apply_dirichlet_noise(root)
         for _ in range(self.num_simulations):
             node = root
             search_path = [node]
