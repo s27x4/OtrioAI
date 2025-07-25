@@ -94,3 +94,38 @@ def train_step(
     loss.backward()
     optimizer.step()
     return loss.item()
+
+
+def save_training_state(
+    model: OtrioNet,
+    optimizer: optim.Optimizer,
+    buffer: ReplayBuffer,
+    path: str,
+) -> None:
+    """モデル・オプティマイザ・リプレイバッファをまとめて保存する"""
+    torch.save(
+        {
+            "model": model.state_dict(),
+            "optimizer": optimizer.state_dict(),
+            "buffer": buffer.data,
+        },
+        path,
+    )
+
+
+def load_training_state(
+    path: str,
+    num_players: int = 2,
+    learning_rate: float = 1e-3,
+    buffer_capacity: int = 10000,
+) -> Tuple[OtrioNet, optim.Optimizer, ReplayBuffer]:
+    """保存された学習状態を読み込む"""
+    data = torch.load(path, map_location=torch.device("cpu"))
+    model = OtrioNet(num_players=num_players)
+    model.load_state_dict(data.get("model", {}))
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    if "optimizer" in data:
+        optimizer.load_state_dict(data["optimizer"])
+    buffer = ReplayBuffer(buffer_capacity)
+    buffer.data = data.get("buffer", [])
+    return model, optimizer, buffer

@@ -1,6 +1,12 @@
 import argparse
 from src.config import load_config
-from src.training import self_play, ReplayBuffer, train_step
+from src.training import (
+    self_play,
+    ReplayBuffer,
+    train_step,
+    save_training_state,
+    load_training_state,
+)
 from src.network import OtrioNet, create_optimizer
 
 
@@ -28,14 +34,34 @@ def main() -> None:
         default=None,
         help="リプレイバッファを読み込むファイルパス",
     )
+    parser.add_argument(
+        "--load-state",
+        type=str,
+        default=None,
+        help="保存した学習状態を読み込むパス",
+    )
+    parser.add_argument(
+        "--save-state",
+        type=str,
+        default=None,
+        help="学習後の状態を保存するパス",
+    )
     args = parser.parse_args()
 
     cfg = load_config()
-    model = OtrioNet(num_players=cfg.num_players)
-    optimizer = create_optimizer(model, lr=cfg.learning_rate)
-    buffer = ReplayBuffer(cfg.buffer_capacity)
-    if args.load_buffer:
-        buffer.load(args.load_buffer)
+    if args.load_state:
+        model, optimizer, buffer = load_training_state(
+            args.load_state,
+            num_players=cfg.num_players,
+            learning_rate=cfg.learning_rate,
+            buffer_capacity=cfg.buffer_capacity,
+        )
+    else:
+        model = OtrioNet(num_players=cfg.num_players)
+        optimizer = create_optimizer(model, lr=cfg.learning_rate)
+        buffer = ReplayBuffer(cfg.buffer_capacity)
+        if args.load_buffer:
+            buffer.load(args.load_buffer)
 
     if args.self_play:
         data = self_play(model, num_simulations=cfg.num_simulations, num_players=cfg.num_players)
@@ -61,6 +87,9 @@ def main() -> None:
         from .gui import train_gui_loop
 
         train_gui_loop(args.train_gui, cfg)
+
+    if args.save_state:
+        save_training_state(model, optimizer, buffer, args.save_state)
 
 
 if __name__ == "__main__":
