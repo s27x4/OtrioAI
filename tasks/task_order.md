@@ -30,13 +30,13 @@
    - [x] 旧モデルとの対戦評価
    - [x] 勝率ログや比較結果の記録
 
-6. [x] **補助機能や管理系** [`support.md`](support.md)
+6. [x] **補助機能や管理系** [`support.md`](support.md) ※確認済み
    - [x] ハイパーパラメータ設定ファイル
    - [x] ログ記録と可視化
    - [x] CLI あるいは Web UI
    - [x] テストケースの作成
 
-7. [x] **追加で検討できる項目（オプション）** [`additional.md`](additional.md)
+7. [x] **追加で検討できる項目（オプション）** [`additional.md`](additional.md) ※確認済み
    - [x] Data Augmentation
    - [x] 複数プレイヤー対応
    - [x] GPU 活用による高速化
