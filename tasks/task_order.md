@@ -26,9 +26,9 @@
    - [x] Replay Buffer の定義
    - [x] 学習データ作成とトレーニング
 
-5. [ ] **モデルの評価と選別** [`evaluation.md`](evaluation.md)
-   - [ ] 旧モデルとの対戦評価
-   - [ ] 勝率ログや比較結果の記録
+5. [x] **モデルの評価と選別** [`evaluation.md`](evaluation.md)
+   - [x] 旧モデルとの対戦評価
+   - [x] 勝率ログや比較結果の記録
 
 6. [ ] **補助機能や管理系** [`support.md`](support.md)
    - [ ] ハイパーパラメータ設定ファイル
