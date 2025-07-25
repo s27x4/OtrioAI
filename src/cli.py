@@ -1,7 +1,7 @@
 import argparse
-from .config import load_config
-from .training import self_play, ReplayBuffer, train_step
-from .network import OtrioNet, create_optimizer
+from src.config import load_config
+from src.training import self_play, ReplayBuffer, train_step
+from src.network import OtrioNet, create_optimizer
 
 
 def main() -> None:
