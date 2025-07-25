@@ -15,6 +15,12 @@ def main() -> None:
         metavar="N",
         help="自己対戦と学習を N 回繰り返す",
     )
+    parser.add_argument(
+        "--load-buffer",
+        type=str,
+        default=None,
+        help="リプレイバッファを読み込むファイルパス",
+    )
     args = parser.parse_args()
 
     cfg = load_config()
