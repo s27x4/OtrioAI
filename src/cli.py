@@ -108,13 +108,18 @@ def main() -> None:
             num_players=cfg.num_players,
             learning_rate=cfg.learning_rate,
             buffer_capacity=cfg.buffer_capacity,
+            num_blocks=cfg.num_blocks,
         )
-        to_device(model, optimizer=optimizer)
+        dev = to_device(model, optimizer=optimizer)
+        buffer.device = dev
+        buffer.data = [
+            (s.to(dev), p.to(dev), v.to(dev)) for s, p, v in buffer.data
+        ]
     else:
-        model = OtrioNet(num_players=cfg.num_players)
-        to_device(model)
+        model = OtrioNet(num_players=cfg.num_players, num_blocks=cfg.num_blocks)
+        dev = to_device(model)
         optimizer = create_optimizer(model, lr=cfg.learning_rate)
-        buffer = ReplayBuffer(cfg.buffer_capacity)
+        buffer = ReplayBuffer(cfg.buffer_capacity, device=dev)
         if args.load_buffer:
             buffer.load(args.load_buffer)
 

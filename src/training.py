@@ -10,15 +10,22 @@ from .otrio import GameState, Player, Move
 
 
 class ReplayBuffer:
-    def __init__(self, capacity: int = 10000) -> None:
+    def __init__(self, capacity: int = 10000, device: str | torch.device | None = None) -> None:
         self.capacity = capacity
+        self.device = torch.device(device or "cpu")
         self.data: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = []
 
     def add(self, samples: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]) -> None:
-        for sample in samples:
+        for state, policy, value in samples:
             if len(self.data) >= self.capacity:
                 self.data.pop(0)
-            self.data.append(sample)
+            self.data.append(
+                (
+                    state.to(self.device, non_blocking=True),
+                    policy.to(self.device, non_blocking=True),
+                    value.to(self.device, non_blocking=True),
+                )
+            )
 
     def sample(self, batch_size: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None:
         if len(self.data) == 0:
@@ -39,15 +46,31 @@ class ReplayBuffer:
 
     def save(self, path: str) -> None:
         """ReplayBuffer をファイルに保存する"""
-        torch.save(self.data, path)
+        cpu_data = [
+            (
+                s.to("cpu"),
+                p.to("cpu"),
+                v.to("cpu"),
+            )
+            for s, p, v in self.data
+        ]
+        torch.save(cpu_data, path)
 
     def load(self, path: str) -> None:
         """ファイルから ReplayBuffer を読み込む"""
-        self.data = torch.load(path, map_location=torch.device("cpu"))
+        raw = torch.load(path, map_location=torch.device("cpu"))
+        self.data = [
+            (
+                s.to(self.device),
+                p.to(self.device),
+                v.to(self.device),
+            )
+            for s, p, v in raw
+        ]
 
 
 def self_play(
-    model: OtrioNet, num_simulations: int = 50, num_players: int = 2
+    model: OtrioNet, num_simulations: int = 100, num_players: int = 2
 ) -> List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
     """MCTS を用いた 1 局の自己対戦を行い、学習データを返す"""
     state = GameState(num_players=num_players)
@@ -107,11 +130,14 @@ def save_training_state(
     path: str,
 ) -> None:
     """モデル・オプティマイザ・リプレイバッファをまとめて保存する"""
+    cpu_buffer = [
+        (s.to("cpu"), p.to("cpu"), v.to("cpu")) for s, p, v in buffer.data
+    ]
     torch.save(
         {
             "model": model.state_dict(),
             "optimizer": optimizer.state_dict(),
-            "buffer": buffer.data,
+            "buffer": cpu_buffer,
         },
         path,
     )
@@ -122,14 +148,20 @@ def load_training_state(
     num_players: int = 2,
     learning_rate: float = 1e-3,
     buffer_capacity: int = 10000,
+    num_blocks: int = 0,
+    device: str | torch.device | None = None,
 ) -> Tuple[OtrioNet, optim.Optimizer, ReplayBuffer]:
     """保存された学習状態を読み込む"""
     data = torch.load(path, map_location=torch.device("cpu"))
-    model = OtrioNet(num_players=num_players)
+    model = OtrioNet(num_players=num_players, num_blocks=num_blocks)
     model.load_state_dict(data.get("model", {}))
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     if "optimizer" in data:
         optimizer.load_state_dict(data["optimizer"])
-    buffer = ReplayBuffer(buffer_capacity)
-    buffer.data = data.get("buffer", [])
+    buffer = ReplayBuffer(buffer_capacity, device=device)
+    raw = data.get("buffer", [])
+    buffer.data = [
+        (s.to(buffer.device), p.to(buffer.device), v.to(buffer.device))
+        for s, p, v in raw
+    ]
     return model, optimizer, buffer

@@ -23,12 +23,16 @@ def train_gui_loop(
         import matplotlib
         matplotlib.use("Agg")
 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if model is None:
-        model = OtrioNet(num_players=cfg.num_players)
+        model = OtrioNet(num_players=cfg.num_players, num_blocks=cfg.num_blocks)
+        model.to(device)
+    else:
+        model.to(device)
     if optimizer is None:
         optimizer = create_optimizer(model, lr=cfg.learning_rate)
     if buffer is None:
-        buffer = ReplayBuffer(cfg.buffer_capacity)
+        buffer = ReplayBuffer(cfg.buffer_capacity, device=device)
     losses: List[float] = []
 
     plt.ion()

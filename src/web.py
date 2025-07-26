@@ -8,13 +8,16 @@ from flask import Flask, jsonify, request
 from .config import load_config
 from .mcts import MCTS
 from .network import OtrioNet, load_model, policy_value
+import torch
 from .otrio import GameState, Move, Player
 
 app = Flask(__name__)
 
 cfg = load_config()
+mcts_device = "cuda" if torch.cuda.is_available() else "cpu"
 state: GameState = GameState(num_players=cfg.num_players)
-model: OtrioNet = OtrioNet(num_players=cfg.num_players)
+model: OtrioNet = OtrioNet(num_players=cfg.num_players, num_blocks=cfg.num_blocks)
+model.to(mcts_device)
 mcts: MCTS = MCTS(lambda s: policy_value(model, s), num_simulations=cfg.num_simulations)
 
 
@@ -23,7 +26,11 @@ def reset(model_path: str | None = None) -> None:
     global state, model, mcts
     state = GameState(num_players=cfg.num_players)
     if model_path:
-        model = load_model(model_path, num_players=cfg.num_players)
+        loaded = load_model(model_path, num_players=cfg.num_players)
+        if loaded is not None:
+            global model
+            model = loaded
+            model.to(mcts_device)
     mcts = MCTS(lambda s: policy_value(model, s), num_simulations=cfg.num_simulations)
 
 
