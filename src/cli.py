@@ -1,4 +1,6 @@
 import argparse
+import threading
+import uvicorn
 from src.config import load_config
 from src.training import (
     self_play,
@@ -17,6 +19,17 @@ from src.network import (
 )
 from src.mcts import MCTS
 from src.otrio import GameState, Move, Player
+
+
+def _start_web_server(host: str = "127.0.0.1", port: int = 8000):
+    """バックグラウンドで Web サーバを起動する"""
+    from . import web
+
+    config = uvicorn.Config(web.app, host=host, port=port, log_level="info")
+    server = uvicorn.Server(config)
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    return server
 
 
 def _prompt_move(state: GameState) -> Move:
@@ -183,6 +196,8 @@ def main() -> None:
     if args.train_loop or args.train_gui:
         from .gui import train_gui_loop
 
+        _start_web_server()
+
         loops = args.train_gui if args.train_gui is not None else args.train_loop
         losses = train_gui_loop(
             loops,
@@ -191,6 +206,7 @@ def main() -> None:
             model=model,
             optimizer=optimizer,
             buffer=buffer,
+            broadcast=True,
         )
         if losses:
             avg_loss = sum(losses) / len(losses)

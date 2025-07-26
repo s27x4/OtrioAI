@@ -21,10 +21,20 @@ def test_cli_train_loop(monkeypatch, capsys):
         return Config(num_simulations=1, buffer_capacity=10, learning_rate=0.001, batch_size=1, num_players=2)
 
     monkeypatch.setattr('src.cli.load_config', fake_load)
+    called = {}
+
+    def dummy_server(*args, **kwargs):
+        called['server'] = True
+    monkeypatch.setattr('src.cli._start_web_server', dummy_server)
+    async def dummy_broadcast(msg):
+        called['msg'] = msg
+    monkeypatch.setattr('src.gui.web.broadcast_train', dummy_broadcast)
     monkeypatch.setattr(sys, 'argv', ['cli', '--train-loop', '2', '--no-gui'])
     main()
     out = capsys.readouterr().out
     assert "平均損失" in out or "loss=" in out
+    assert called.get('server')
+    assert called['msg']['iteration'] == 2
 
 
 def test_cli_play_model(monkeypatch, tmp_path):

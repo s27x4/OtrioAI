@@ -2,6 +2,9 @@ import argparse
 from typing import List
 import matplotlib.pyplot as plt
 import torch
+import asyncio
+
+from . import web
 
 from .config import load_config, Config
 from .training import self_play, self_play_parallel, ReplayBuffer, train_step
@@ -15,6 +18,7 @@ def train_gui_loop(
     model: OtrioNet | None = None,
     optimizer: torch.optim.Optimizer | None = None,
     buffer: ReplayBuffer | None = None,
+    broadcast: bool = False,
 ) -> List[float]:
     """GUIで学習進捗を表示しながら学習を実行する"""
     if cfg is None:
@@ -74,6 +78,12 @@ def train_gui_loop(
             value_weight=cfg.value_loss_weight,
         )
         losses.append(loss)
+        if broadcast:
+            try:
+                asyncio.run(web.broadcast_train({"iteration": i + 1, "loss": loss}))
+            except RuntimeError:
+                # Ignore if event loop is already running
+                pass
 
         line.set_data(range(1, len(losses) + 1), losses)
         # set x-axis range; avoid identical limits when len(losses) == 1
