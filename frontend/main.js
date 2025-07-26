@@ -55,6 +55,19 @@ async function post(url, obj) {
   return res.json();
 }
 
+async function updateModelList() {
+  const res = await fetch('/models');
+  const data = await res.json();
+  const select = document.getElementById('model_select');
+  select.innerHTML = '';
+  data.models.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = m;
+    select.appendChild(opt);
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const ctx = document.getElementById('lossChart').getContext('2d');
   chart = new Chart(ctx, {
@@ -65,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   connectTrainWS();
   connectGameWS();
+  updateModelList();
 
   document.getElementById('start_train').onclick = () => {
     const iterations = parseInt(document.getElementById('iterations').value || '1');
@@ -74,13 +88,16 @@ document.addEventListener('DOMContentLoaded', () => {
     post('/stop', {});
   };
   document.getElementById('save_model').onclick = () => {
-    post('/model_save', {path: 'model.pt'});
+    const name = document.getElementById('model_select').value || 'model.pt';
+    post('/model_save', {path: name}).then(updateModelList);
   };
   document.getElementById('load_model').onclick = () => {
-    post('/model_load', {path: 'model.pt'});
+    const name = document.getElementById('model_select').value;
+    if (name) { post('/model_load', {path: name}); }
   };
   document.getElementById('start_game').onclick = () => {
-    post('/start', {});
+    const name = document.getElementById('model_select').value;
+    post('/start', {model: name});
   };
   document.getElementById('move_form').onsubmit = (e) => {
     e.preventDefault();

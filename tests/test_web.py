@@ -7,14 +7,19 @@ from fastapi.testclient import TestClient
 from src.config import Config
 
 
-def test_web_endpoints(monkeypatch):
+def test_web_endpoints(monkeypatch, tmp_path):
     import src.web as web
 
     def fake_load_config():
         return Config(num_simulations=1, buffer_capacity=10, learning_rate=0.001, batch_size=1, num_players=2)
 
+    env_path = tmp_path / "env"
+    env_path.mkdir()
+    (env_path / "foo.pt").write_text("dummy")
     monkeypatch.setattr(web, "load_config", fake_load_config)
+    monkeypatch.setattr(web, "env_dir", env_path)
     web = importlib.reload(web)
+    monkeypatch.setattr(web, "env_dir", env_path)
 
     class DummyMCTS:
         def __init__(self, fn, num_simulations=1):
@@ -32,9 +37,12 @@ def test_web_endpoints(monkeypatch):
 
     client = TestClient(web.app)
 
+    res = client.get("/models")
+    assert res.json()["models"] == ["foo.pt"]
+
     res = client.post("/start", json={"model": "foo.pt"})
     assert res.status_code == 200
-    assert called["model"] == "foo.pt"
+    assert called["model"] == str(env_path / "foo.pt")
 
     res = client.post("/move", json={"row": 0, "col": 0, "size": 0})
     data = res.json()

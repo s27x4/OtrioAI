@@ -31,6 +31,7 @@ app = FastAPI()
 frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
 if frontend_dir.exists():
     app.mount("/ui", StaticFiles(directory=str(frontend_dir), html=True), name="ui")
+env_dir = Path(__file__).resolve().parent.parent / "env"
 
 cfg: Config = load_config()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -109,9 +110,26 @@ async def broadcast_game() -> None:
     game_clients[:] = living
 
 
+def available_models() -> list[str]:
+    if not env_dir.exists():
+        return []
+    return sorted([p.name for p in env_dir.glob("*.pt")])
+
+
+@app.get("/models")
+async def get_models():
+    return {"models": available_models()}
+
+
 @app.post("/start")
 async def start_game(data: dict = Body(default={})):  # pragma: no cover - simple wrapper
     path = data.get("model") if data else None
+    if path:
+        p = Path(path)
+        if not p.is_absolute() and not p.exists():
+            candidate = env_dir / p.name
+            if candidate.exists():
+                path = str(candidate)
     reset(path)
     await broadcast_game()
     return {"status": "ok"}
@@ -179,8 +197,11 @@ async def model_save(data: dict = Body(default={"path": "model.pt"})):
     from .training import save_training_state
 
     path = data.get("path", "model.pt")
-    await asyncio.to_thread(save_training_state, model, optimizer, buffer, path)
-    return {"status": "saved", "path": path}
+    p = Path(path)
+    if not p.is_absolute():
+        p = env_dir / p.name
+    await asyncio.to_thread(save_training_state, model, optimizer, buffer, str(p))
+    return {"status": "saved", "path": str(p)}
 
 
 @app.post("/model_load")
@@ -188,6 +209,12 @@ async def model_load(data: dict = Body(default={"path": "model.pt"})):
     from .training import load_training_state
 
     path = data.get("path", "model.pt")
+    p = Path(path)
+    if not p.is_absolute() and not p.exists():
+        candidate = env_dir / p.name
+        if candidate.exists():
+            p = candidate
+    path = str(p)
     global model, optimizer, buffer, mcts
     model, optimizer, buffer = await asyncio.to_thread(
         load_training_state,
