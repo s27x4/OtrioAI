@@ -119,12 +119,19 @@ def loss_fn(
 
 
 def save_model(model: OtrioNet, path: str) -> None:
-    torch.save(model.state_dict(), path)
+    """モデルの状態を保存する"""
+    torch.save({"model": model.state_dict()}, path)
 
 
 def load_model(path: str, num_players: int = 2, num_blocks: int = 0, channels: int = 128) -> OtrioNet:
+    """保存済みモデルを読み込む"""
+    data = torch.load(path, map_location=torch.device("cpu"))
+    if isinstance(data, dict) and "model" in data:
+        state_dict = data["model"]
+    else:
+        state_dict = data
     model = OtrioNet(num_players=num_players, num_blocks=num_blocks, channels=channels)
-    model.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
+    model.load_state_dict(state_dict)
     return model
 
 
