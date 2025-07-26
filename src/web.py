@@ -54,6 +54,7 @@ training_task: asyncio.Task | None = None
 train_iteration: int = 0
 train_loss: float = 0.0
 training_error: str | None = None
+stop_training_flag: bool = False
 
 
 def reset(model_path: str | None = None) -> None:
@@ -249,7 +250,8 @@ async def model_load(data: dict = Body(default={"path": "model.pt"})):
 
 @app.post("/stop")
 async def stop_training():
-    global training_task
+    global training_task, stop_training_flag
+    stop_training_flag = True
     if training_task:
         training_task.cancel()
     training_task = None
@@ -261,10 +263,12 @@ class TrainRequest(BaseModel):
 
 
 async def train_loop(iterations: int) -> None:
-    global train_iteration, train_loss, training_error
+    global train_iteration, train_loss, training_error, stop_training_flag
     training_error = None
     try:
         for i in range(iterations):
+            if stop_training_flag:
+                break
             if cfg.parallel_games > 1:
                 data = await asyncio.to_thread(
                     self_play_parallel,
@@ -285,6 +289,8 @@ async def train_loop(iterations: int) -> None:
                     resign_threshold=cfg.resign_threshold,
                 )
             buffer.add(data)
+            if stop_training_flag:
+                break
             loss = await asyncio.to_thread(
                 train_step,
                 model,
@@ -304,7 +310,8 @@ async def train_loop(iterations: int) -> None:
 
 @app.post("/train")
 async def start_train(req: TrainRequest):
-    global training_task
+    global training_task, stop_training_flag
+    stop_training_flag = False
     if training_task and not training_task.done():
         return {"status": "running"}
     training_task = asyncio.create_task(train_loop(req.iterations))
