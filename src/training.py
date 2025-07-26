@@ -73,7 +73,11 @@ class ReplayBuffer:
 
 
 def self_play(
-    model: OtrioNet, num_simulations: int = 100, num_players: int = 2
+    model: OtrioNet,
+    num_simulations: int = 100,
+    num_players: int = 2,
+    max_moves: int | None = None,
+    resign_threshold: float | None = None,
 ) -> List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
     """MCTS を用いた 1 局の自己対戦を行い、学習データを返す"""
     state = GameState(num_players=num_players)
@@ -81,7 +85,7 @@ def self_play(
     history: List[Tuple[GameState, torch.Tensor]] = []
 
     while not state.winner and not state.draw:
-        move, visits = mcts.run(state)
+        move, visits, value = mcts.run(state)
         total = sum(visits.values())
         policy = torch.zeros(27, dtype=torch.float32)
         if total > 0:
@@ -89,7 +93,16 @@ def self_play(
                 idx = m.size * 9 + m.row * 3 + m.col
                 policy[idx] = v / total
         history.append((state.clone(), policy))
+
+        if resign_threshold is not None and value < resign_threshold:
+            state.winner = Player.next_player(state.current_player, num_players)
+            break
+
         state.apply_move(move)
+
+        if max_moves is not None and len(state.move_history) >= max_moves:
+            state.draw = True
+            break
 
     samples: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = []
     for s, p in history:
@@ -108,12 +121,20 @@ def self_play_parallel(
     num_games: int,
     num_simulations: int = 100,
     num_players: int = 2,
+    max_moves: int | None = None,
+    resign_threshold: float | None = None,
 ) -> List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
     """複数ゲームを並列に自己対戦しデータを生成"""
     results: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = []
 
     def worker(_: int):
-        return self_play(model, num_simulations=num_simulations, num_players=num_players)
+        return self_play(
+            model,
+            num_simulations=num_simulations,
+            num_players=num_players,
+            max_moves=max_moves,
+            resign_threshold=resign_threshold,
+        )
 
     with ThreadPoolExecutor() as ex:
         for data in ex.map(worker, range(num_games)):

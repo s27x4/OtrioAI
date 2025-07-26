@@ -4,7 +4,7 @@
 OtrioAI はボードゲーム **Otrio** を AI 学習させるための実験プロジェクトです。AlphaZero 方式を参考に、
 ゲーム環境・MCTS・ニューラルネットワーク・自己対戦による学習ループの構築を目指しています。
 最新版ではネットワークのチャンネル数や残差ブロック数を増やし、MCTS の並列実行にも対応しました。
-`config.yaml` で `channels` や `parallel_games` を設定することで、より大規模な学習が可能です。
+`config.yaml` では `channels` や `parallel_games` のほか、自己対戦の最大手数 `max_moves` と投了判定 `resign_threshold` も設定できます。
 
 ## 依存ライブラリ
 ゲーム環境や MCTS は Python 標準ライブラリで動作しますが、

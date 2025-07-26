@@ -21,9 +21,9 @@ def play_match(
 
     while not state.winner and not state.draw:
         if state.current_player == Player.PLAYER1:
-            move, _ = mcts1.run(state)
+            move, _, _ = mcts1.run(state)
         else:
-            move, _ = mcts2.run(state)
+            move, _, _ = mcts2.run(state)
         state.apply_move(move)
     return state.winner if state.winner else Player.NONE
 
