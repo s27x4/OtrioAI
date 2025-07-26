@@ -160,7 +160,13 @@ def main() -> None:
                         num_players=cfg.num_players,
                     )
                 )
-        loss = train_step(model, optimizer, buffer, cfg.batch_size)
+        loss = train_step(
+            model,
+            optimizer,
+            buffer,
+            cfg.batch_size,
+            value_weight=cfg.value_loss_weight,
+        )
         print(f"loss={loss:.4f}")
     if args.train_loop or args.train_gui:
         from .gui import train_gui_loop

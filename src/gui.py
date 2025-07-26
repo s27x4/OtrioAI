@@ -60,7 +60,13 @@ def train_gui_loop(
                 model, num_simulations=cfg.num_simulations, num_players=cfg.num_players
             )
         buffer.add(data)
-        loss = train_step(model, optimizer, buffer, cfg.batch_size)
+        loss = train_step(
+            model,
+            optimizer,
+            buffer,
+            cfg.batch_size,
+            value_weight=cfg.value_loss_weight,
+        )
         losses.append(loss)
 
         line.set_data(range(1, len(losses) + 1), losses)

@@ -12,6 +12,15 @@ class Config:
     num_blocks: int = 2
     channels: int = 128
     parallel_games: int = 1
+    value_loss_weight: float = 0.01
+    c_puct: float = 1.4
+    temperature: float = 1.0
+    max_moves: int = 54
+    resign_threshold: float = -0.9
+    save_interval: int = 100
+    log_interval: int = 10
+    output_dir: str = "./logs"
+    input_shape: tuple[int, int, int] | None = None
 
 
 def load_config(path: str = "config.yaml") -> Config:
@@ -38,5 +47,7 @@ def load_config(path: str = "config.yaml") -> Config:
 
     cfg_fields = {f.name for f in fields(Config)}
     filtered = {k: v for k, v in data.items() if k in cfg_fields}
+    if "input_shape" in filtered and isinstance(filtered["input_shape"], list):
+        filtered["input_shape"] = tuple(filtered["input_shape"])
     cfg_dict = {**Config().__dict__, **filtered}
     return Config(**cfg_dict)
