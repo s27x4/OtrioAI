@@ -1,9 +1,9 @@
 import os
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from src.gui import train_gui_loop
-from src.config import Config
+from OtrioAI.gui import train_gui_loop
+from OtrioAI.config import Config
 
 
 def test_train_gui_loop_runs_headless():

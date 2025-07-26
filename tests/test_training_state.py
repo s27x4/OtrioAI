@@ -2,16 +2,16 @@ import os
 import sys
 import torch
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from src.training import (
+from OtrioAI.training import (
     ReplayBuffer,
     self_play,
     save_training_state,
     load_training_state,
 )
-from src.network import OtrioNet
-from src.config import Config
+from OtrioAI.network import OtrioNet
+from OtrioAI.config import Config
 
 
 def test_save_and_load_training_state(tmp_path):

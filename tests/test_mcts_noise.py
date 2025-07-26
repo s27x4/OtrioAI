@@ -1,9 +1,9 @@
 import os
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from src.mcts import MCTS, Node
-from src.otrio import GameState
+from OtrioAI.mcts import MCTS, Node
+from OtrioAI.otrio import GameState
 
 
 def test_dirichlet_noise_changes_priors():

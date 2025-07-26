@@ -1,10 +1,10 @@
 import os
 import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from src.network import OtrioNet
-from src.evaluation import evaluate_models
+from OtrioAI.network import OtrioNet
+from OtrioAI.evaluation import evaluate_models
 
 
 def test_evaluate_models_runs():

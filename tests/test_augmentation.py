@@ -1,8 +1,8 @@
 import os
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 import torch
-from src.augmentation import augment_samples
+from OtrioAI.augmentation import augment_samples
 
 
 def test_augment_samples():

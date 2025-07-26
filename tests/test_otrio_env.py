@@ -1,10 +1,10 @@
 import os
 import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
 import numpy as np
-from src.otrio_env import OtrioEnv
+from OtrioAI.otrio_env import OtrioEnv
 
 
 def test_env_legal_moves_and_step():

@@ -1,6 +1,6 @@
 import argparse
-from src.config import load_config
-from src.training import (
+from OtrioAI.config import load_config
+from OtrioAI.training import (
     self_play,
     self_play_parallel,
     ReplayBuffer,
@@ -8,15 +8,15 @@ from src.training import (
     save_training_state,
     load_training_state,
 )
-from src.network import (
+from OtrioAI.network import (
     OtrioNet,
     create_optimizer,
     load_model,
     policy_value,
     to_device,
 )
-from src.mcts import MCTS
-from src.otrio import GameState, Move, Player
+from OtrioAI.mcts import MCTS
+from OtrioAI.otrio import GameState, Move, Player
 
 
 def _prompt_move(state: GameState) -> Move:

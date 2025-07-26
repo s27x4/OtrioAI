@@ -2,10 +2,10 @@ import os
 import sys
 import torch
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from src.network import OtrioNet, state_to_tensor, create_optimizer
-from src.otrio import GameState
+from OtrioAI.network import OtrioNet, state_to_tensor, create_optimizer
+from OtrioAI.otrio import GameState
 
 
 def test_state_to_tensor_shape():

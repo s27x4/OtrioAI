@@ -28,10 +28,10 @@ from .otrio import GameState, Move, Player
 
 
 app = FastAPI()
-frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
+frontend_dir = Path(__file__).resolve().parents[2] / "frontend"
 if frontend_dir.exists():
     app.mount("/ui", StaticFiles(directory=str(frontend_dir), html=True), name="ui")
-env_dir = Path(__file__).resolve().parent.parent / "env"
+env_dir = Path(__file__).resolve().parents[2] / "env"
 
 cfg: Config = load_config()
 

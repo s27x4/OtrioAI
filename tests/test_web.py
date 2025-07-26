@@ -1,14 +1,14 @@
 import importlib
 import os
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from fastapi.testclient import TestClient
-from src.config import Config
+from OtrioAI.config import Config
 
 
 def test_web_endpoints(monkeypatch, tmp_path):
-    import src.web as web
+    import OtrioAI.web as web
 
     def fake_load_config():
         return Config(num_simulations=1, buffer_capacity=10, learning_rate=0.001, batch_size=1, num_players=2)
@@ -52,7 +52,7 @@ def test_web_endpoints(monkeypatch, tmp_path):
 
 
 def test_ws_train(monkeypatch):
-    import src.web as web
+    import OtrioAI.web as web
 
     def fake_load_config():
         return Config(num_simulations=1, buffer_capacity=10, learning_rate=0.001, batch_size=1, num_players=2)
@@ -76,7 +76,7 @@ def test_ws_train(monkeypatch):
 
 
 def test_ws_log(monkeypatch):
-    import src.web as web
+    import OtrioAI.web as web
 
     def fake_load_config():
         return Config(num_simulations=1, buffer_capacity=10, learning_rate=0.001, batch_size=1, num_players=2)
@@ -100,7 +100,7 @@ def test_ws_log(monkeypatch):
 
 
 def test_new_model(monkeypatch):
-    import src.web as web
+    import OtrioAI.web as web
 
     def fake_load_config():
         return Config(num_simulations=1, buffer_capacity=10, learning_rate=0.001, batch_size=1, num_players=2)
@@ -115,7 +115,7 @@ def test_new_model(monkeypatch):
 
 
 def test_stop_training(monkeypatch):
-    import src.web as web
+    import OtrioAI.web as web
 
     def fake_load_config():
         return Config(num_simulations=1, buffer_capacity=10, learning_rate=0.001, batch_size=1, num_players=2)

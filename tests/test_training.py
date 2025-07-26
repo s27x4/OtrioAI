@@ -3,11 +3,11 @@ import sys
 import torch
 import multiprocessing
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 multiprocessing.set_start_method("fork", force=True)
 
-from src.training import ReplayBuffer, self_play, self_play_parallel, train_step
-from src.network import OtrioNet
+from OtrioAI.training import ReplayBuffer, self_play, self_play_parallel, train_step
+from OtrioAI.network import OtrioNet
 
 
 def test_self_play_generates_samples():
@@ -29,7 +29,7 @@ def test_self_play_parallel_generates_samples(monkeypatch):
             results.extend(self_play(model, num_simulations=kwargs.get("num_simulations", 1), num_players=kwargs.get("num_players", 2)))
         return results
 
-    monkeypatch.setattr('src.training.self_play_parallel', dummy_parallel)
+    monkeypatch.setattr('OtrioAI.training.self_play_parallel', dummy_parallel)
     data = dummy_parallel(model, num_games=2, num_simulations=1, num_players=2)
     assert len(data) > 0
 

@@ -4,9 +4,9 @@ import json
 
 os.environ["MPLBACKEND"] = "Agg"
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from src.logger import log_metrics, plot_metrics
+from OtrioAI.logger import log_metrics, plot_metrics
 
 
 def test_log_metrics_and_plot(tmp_path):

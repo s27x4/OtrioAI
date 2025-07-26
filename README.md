@@ -12,12 +12,14 @@ OtrioAI はボードゲーム **Otrio** を AI 学習させるための実験プ
 バージョン固定済みの `requirements.txt` に記載されたライブラリをインストールしてください。
 推奨 Python バージョンは 3.10 以上です。
 
+ソースコードは `src/OtrioAI/` 以下にまとまっており、`from OtrioAI.xxx` の形式でインポートできます。
+
 ## 実行方法
-CLI は `src/cli.py` にあり、自己対戦や学習ステップを実行できます。`src/otrio.py` には簡易的なゲーム環境 `GameState` も用意しています。
+CLI は `src/OtrioAI/cli.py` にあり、自己対戦や学習ステップを実行できます。`src/OtrioAI/otrio.py` には簡易的なゲーム環境 `GameState` も用意しています。
 以下は `GameState` の利用例です。
 
 ```python
-from src.otrio import GameState
+from OtrioAI.otrio import GameState
 
 state = GameState()
 moves = state.legal_moves()
@@ -29,11 +31,11 @@ print(state.log())
 
 ### CLI の基本的な使い方
 
-`src/cli.py` は Python のモジュールとして実行できます。以下のように起動すると
+`src/OtrioAI/cli.py` は Python のモジュールとして実行できます。以下のように起動すると
 利用可能なオプション一覧が表示されます。
 
 ```bash
-python -m src.cli --help
+python -m OtrioAI.cli --help
 ```
 
 主なオプションは次の通りです。
@@ -50,17 +52,17 @@ python -m src.cli --help
 例えば 5 回学習を回し、その結果を保存する場合は次のように実行します。
 
 ```bash
-python -m src.cli --train-loop 5 --save-state checkpoint.pt
+python -m OtrioAI.cli --train-loop 5 --save-state checkpoint.pt
 ```
 
 ### モデルの保存と学習再開
 
-`src/cli.py` では学習状態の保存・読み込みも行えます。
+`src/OtrioAI/cli.py` では学習状態の保存・読み込みも行えます。
 例えば以下のように実行することで学習後のモデルとリプレイバッファ、
 オプティマイザ状態をまとめて保存できます。
 
 ```bash
-python -m src.cli --train-loop 10 --save-state checkpoint.pt
+python -m OtrioAI.cli --train-loop 10 --save-state checkpoint.pt
 ```
 
 保存したファイルは `--load-state` オプションで読み込めるため、
@@ -71,7 +73,7 @@ python -m src.cli --train-loop 10 --save-state checkpoint.pt
 保存済みのモデルと対戦したい場合は次のように実行します。
 
 ```bash
-python -m src.cli --play-model model.pt
+python -m OtrioAI.cli --play-model model.pt
 ```
 
 `row col size` の形式で手を入力すると、先手としてプレイできます。
@@ -79,10 +81,10 @@ python -m src.cli --play-model model.pt
 ### FastAPI ベースの WebUI
 
 学習や対戦は FastAPI で提供される WebUI から操作できます。
-`python -m src.web` を実行した後、ブラウザで `http://localhost:8000/ui` にアクセスするとダッシュボードが表示されます。
+`python -m OtrioAI.web` を実行した後、ブラウザで `http://localhost:8000/ui` にアクセスするとダッシュボードが表示されます。
 
 ```bash
-python -m src.web --model model.pt
+python -m OtrioAI.web --model model.pt
 ```
 
 ブラウザで `http://localhost:8000/docs` を開くと API ドキュメントが表示されます。
@@ -115,4 +117,6 @@ Otrio では次のような勝利条件があります。
 ```bash
 pip install -r requirements.txt  # バージョン固定済みの依存ライブラリをインストール
 pytest
+
+GitHub Actions でも同じ手順で依存ライブラリをインストールし、`pytest` を実行しています。外部ツールや追加データは不要です。
 ```

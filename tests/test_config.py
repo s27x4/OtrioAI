@@ -1,7 +1,7 @@
 import os
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-from src.config import load_config, Config
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
+from OtrioAI.config import load_config, Config
 
 
 def test_load_config_defaults(tmp_path):

@@ -1,7 +1,7 @@
 import os
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-from src.otrio import GameState, Player, Move
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
+from OtrioAI.otrio import GameState, Player, Move
 
 
 def test_next_player_three_players():

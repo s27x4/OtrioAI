@@ -3,9 +3,9 @@ import sys
 
 import pytest
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from src.otrio import GameState, Move, Player
+from OtrioAI.otrio import GameState, Move, Player
 
 
 def test_line_same_size_horizontal():
