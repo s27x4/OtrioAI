@@ -6,6 +6,7 @@ from torch import optim
 
 from .mcts import MCTS
 from .network import OtrioNet, policy_value, state_to_tensor, loss_fn
+from .augmentation import augment_samples
 from .otrio import GameState, Player, Move
 
 
@@ -16,7 +17,8 @@ class ReplayBuffer:
         self.data: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = []
 
     def add(self, samples: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]) -> None:
-        for state, policy, value in samples:
+        augmented = augment_samples(samples)
+        for state, policy, value in augmented:
             if len(self.data) >= self.capacity:
                 self.data.pop(0)
             self.data.append(
