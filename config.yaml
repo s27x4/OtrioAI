@@ -1,8 +1,33 @@
-learning_rate: 0.001
-buffer_capacity: 10000
-num_simulations: 100
-batch_size: 2048
-num_players: 2
-num_blocks: 8
-channels: 128
-parallel_games: 4
+# ─── モデル設定 ──────────────────
+model:
+  num_blocks: 10         # 深すぎず浅すぎず。表現力と速度のバランス
+  channels: 128          # 表現力は十分、VRAMにも優しい
+  input_shape: [3, 3, 3] # Otrioの盤面サイズ。必要に応じて修正
+
+# ─── 学習設定 ─────────────────
+training:
+  learning_rate: 0.0003      # 安定学習の定番。Adam系最適
+  batch_size: 64             # 学習安定化優先。メモリに余裕があれば128も可
+  buffer_capacity: 50000     # 自己対戦の多様性維持のため拡張
+  value_loss_weight: 0.01    # AlphaZero式のバランス（Policyを主役に）
+
+# ─── MCTS / self-play 設定 ────────────
+mcts:
+  num_simulations: 200       # 少し重くなるけどpolicyが強くなる
+  c_puct: 1.5                # 探索と活用のバランス（定番値）
+  temperature: 1.0           # 序盤探索の温度。終盤で縛る設計にしてもOK
+
+self_play:
+  parallel_games: 8          # 並列性と効率アップ
+  max_moves: 54              # Otrioでの最大ターン数（3x3x3マス）
+  resign_threshold: -0.9     # 勝ち目なし判断（学習効率化）
+
+# ─── プレイヤー設定 ───────────
+game:
+  num_players: 2             # Otrioの2人対戦モード前提（変更可）
+
+# ─── ログ/保存など ─────────────
+logging:
+  save_interval: 100         # checkpoint保存の頻度（epoch or self-play回数）
+  log_interval: 10           # ログ出力の頻度
+  output_dir: "./logs"
