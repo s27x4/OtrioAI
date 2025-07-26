@@ -10,4 +10,4 @@ def test_augment_samples():
     policy = torch.zeros(27)
     value = torch.tensor(1.0)
     samples = augment_samples([(state, policy, value)])
-    assert len(samples) == 8
+    assert len(samples) == 16

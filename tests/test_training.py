@@ -4,7 +4,7 @@ import torch
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from src.training import ReplayBuffer, self_play, train_step
+from src.training import ReplayBuffer, self_play, self_play_parallel, train_step
 from src.network import OtrioNet
 
 
@@ -16,6 +16,12 @@ def test_self_play_generates_samples():
     assert state.shape == (7, 3, 3)
     assert policy.shape == (27,)
     assert isinstance(value.item(), float)
+
+
+def test_self_play_parallel_generates_samples():
+    model = OtrioNet(num_players=2)
+    data = self_play_parallel(model, num_games=2, num_simulations=1, num_players=2)
+    assert len(data) > 0
 
 
 def test_replay_buffer_and_train_step():

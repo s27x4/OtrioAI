@@ -22,7 +22,7 @@ def test_web_endpoints(monkeypatch):
             return state.legal_moves()[0], None
 
     called = {}
-    def fake_load_model(path, num_players=2):
+    def fake_load_model(path, num_players=2, **kwargs):
         called["model"] = path
         return None
 

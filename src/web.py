@@ -16,7 +16,11 @@ app = Flask(__name__)
 cfg = load_config()
 mcts_device = "cuda" if torch.cuda.is_available() else "cpu"
 state: GameState = GameState(num_players=cfg.num_players)
-model: OtrioNet = OtrioNet(num_players=cfg.num_players, num_blocks=cfg.num_blocks)
+model: OtrioNet = OtrioNet(
+    num_players=cfg.num_players,
+    num_blocks=cfg.num_blocks,
+    channels=cfg.channels,
+)
 model.to(mcts_device)
 mcts: MCTS = MCTS(lambda s: policy_value(model, s), num_simulations=cfg.num_simulations)
 
@@ -26,7 +30,12 @@ def reset(model_path: str | None = None) -> None:
     global state, model, mcts
     state = GameState(num_players=cfg.num_players)
     if model_path:
-        loaded = load_model(model_path, num_players=cfg.num_players)
+        loaded = load_model(
+            model_path,
+            num_players=cfg.num_players,
+            num_blocks=cfg.num_blocks,
+            channels=cfg.channels,
+        )
         if loaded is not None:
             global model
             model = loaded

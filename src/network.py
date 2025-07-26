@@ -51,32 +51,32 @@ class ResidualBlock(nn.Module):
 
 
 class OtrioNet(nn.Module):
-    def __init__(self, num_players: int = 2, num_blocks: int = 0):
+    def __init__(self, num_players: int = 2, num_blocks: int = 0, channels: int = 128):
         super().__init__()
         self.num_players = num_players
         in_channels = num_players * 3 + 1
         layers = [
-            nn.Conv2d(in_channels, 32, 3, padding=1),
+            nn.Conv2d(in_channels, channels, 3, padding=1),
             nn.ReLU(),
-            nn.Conv2d(32, 64, 3, padding=1),
+            nn.Conv2d(channels, channels, 3, padding=1),
             nn.ReLU(),
         ]
         for _ in range(num_blocks):
-            layers.append(ResidualBlock(64))
+            layers.append(ResidualBlock(channels))
         self.backbone = nn.Sequential(*layers)
         self.policy_head = nn.Sequential(
-            nn.Conv2d(64, 2, 1),
+            nn.Conv2d(channels, 2, 1),
             nn.ReLU(),
             nn.Flatten(),
             nn.Linear(2 * 3 * 3, 27),
         )
         self.value_head = nn.Sequential(
-            nn.Conv2d(64, 1, 1),
+            nn.Conv2d(channels, 1, 1),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(3 * 3, 64),
+            nn.Linear(3 * 3, channels),
             nn.ReLU(),
-            nn.Linear(64, 1),
+            nn.Linear(channels, 1),
             nn.Tanh(),
         )
 
@@ -122,8 +122,8 @@ def save_model(model: OtrioNet, path: str) -> None:
     torch.save(model.state_dict(), path)
 
 
-def load_model(path: str, num_players: int = 2, num_blocks: int = 0) -> OtrioNet:
-    model = OtrioNet(num_players=num_players, num_blocks=num_blocks)
+def load_model(path: str, num_players: int = 2, num_blocks: int = 0, channels: int = 128) -> OtrioNet:
+    model = OtrioNet(num_players=num_players, num_blocks=num_blocks, channels=channels)
     model.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
     return model
 
