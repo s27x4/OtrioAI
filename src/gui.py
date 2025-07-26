@@ -52,7 +52,8 @@ def train_gui_loop(
         losses.append(loss)
 
         line.set_data(range(1, len(losses) + 1), losses)
-        ax.set_xlim(1, len(losses))
+        # set x-axis range; avoid identical limits when len(losses) == 1
+        ax.set_xlim(1, max(2, len(losses)))
         ymin, ymax = min(losses), max(losses)
         if ymin == ymax:
             ymax = ymin + 1e-3

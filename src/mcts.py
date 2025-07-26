@@ -5,6 +5,9 @@ from typing import Callable, Dict, Optional, Tuple
 import math
 import torch
 
+# ディリクレノイズと既存 prior を混合する際の割合
+DIRICHLET_EPSILON = 0.25
+
 from .otrio import GameState, Move, Player
 
 
@@ -33,7 +36,7 @@ class MCTS:
         self.c_puct = c_puct
 
     def _apply_dirichlet_noise(self, node: Node, alpha: float = 0.03) -> None:
-        """各子ノードの prior にディリクレノイズを加算し正規化"""
+        """各子ノードの prior をディリクレノイズと混合し正規化"""
         if not node.children:
             return
         dist = torch.distributions.dirichlet.Dirichlet(
@@ -41,7 +44,7 @@ class MCTS:
         )
         noise = dist.sample()
         for child, n in zip(node.children.values(), noise):
-            child.prior += n.item()
+            child.prior = (1 - DIRICHLET_EPSILON) * child.prior + DIRICHLET_EPSILON * n.item()
         total = sum(c.prior for c in node.children.values())
         for child in node.children.values():
             child.prior /= total
