@@ -1,5 +1,6 @@
 torch
 pyyaml
 matplotlib
-flask
+fastapi
+uvicorn
 gymnasium

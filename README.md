@@ -76,31 +76,23 @@ python -m src.cli --play-model model.pt
 
 `row col size` の形式で手を入力すると、先手としてプレイできます。
 
-### Flask サーバで対戦
+### FastAPI ベースの WebUI
 
-HTTP 経由でプレイしたい場合は Flask サーバを起動します。
+学習や対戦は FastAPI で提供される WebUI から操作できます。
 
 ```bash
 python -m src.web --model model.pt
 ```
 
-別ターミナルから以下のようにリクエストを送ることで手番を進められます。
+ブラウザで `http://localhost:8000/docs` を開くと API ドキュメントが表示されます。
+`/ws/train` へ WebSocket 接続すると学習損失の更新が受け取れます。
+`/ws/game` に接続したまま `POST /start` や `POST /move` を実行すると、盤面の更新がリアルタイムに送信されます。
 
-```bash
-curl -X POST http://localhost:5000/start
-curl -X POST -H "Content-Type: application/json" \
-    -d '{"row":0,"col":0,"size":0}' http://localhost:5000/move
-```
+### WebUI から学習進捗を確認
 
-### GUI を使った学習進捗の表示
-
-`src/gui.py` では学習ループ中の損失をグラフ表示する簡易 GUI を提供しています。
-`src/cli.py` から `--train-loop` を指定した場合も同様に GUI が表示されます。
-以下のように実行することで、学習状況をリアルタイムで確認できます。
-
-```bash
-python -m src.gui 10  # 10 回学習を実行しながらグラフ表示
-```
+GUI は廃止され、代わりに WebSocket で損失値を受信してブラウザ側で可視化します。
+`POST /train` に `{"iterations": 10}` のように回数を渡すと学習が始まり、
+`/ws/train` へ接続したクライアントに `{"iteration": i, "loss": L}` が順次送られます。
 
 ## Otrio ルール概要と実装状況
 Otrio では次のような勝利条件があります。
