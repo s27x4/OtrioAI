@@ -2,6 +2,7 @@ import argparse
 from src.config import load_config
 from src.training import (
     self_play,
+    self_play_parallel,
     ReplayBuffer,
     train_step,
     save_training_state,
@@ -38,7 +39,7 @@ def _prompt_move(state: GameState) -> Move:
 
 def play_vs_model(path: str, cfg) -> None:
     """保存済みモデルと1局対戦する"""
-    model = load_model(path, num_players=cfg.num_players)
+    model = load_model(path, num_players=cfg.num_players, channels=cfg.channels)
     state = GameState(num_players=cfg.num_players)
     mcts = MCTS(lambda s: policy_value(model, s), num_simulations=cfg.num_simulations)
     while not state.winner and not state.draw:
@@ -109,6 +110,7 @@ def main() -> None:
             learning_rate=cfg.learning_rate,
             buffer_capacity=cfg.buffer_capacity,
             num_blocks=cfg.num_blocks,
+            channels=cfg.channels,
         )
         dev = to_device(model, optimizer=optimizer)
         buffer.device = dev
@@ -116,7 +118,11 @@ def main() -> None:
             (s.to(dev), p.to(dev), v.to(dev)) for s, p, v in buffer.data
         ]
     else:
-        model = OtrioNet(num_players=cfg.num_players, num_blocks=cfg.num_blocks)
+        model = OtrioNet(
+            num_players=cfg.num_players,
+            num_blocks=cfg.num_blocks,
+            channels=cfg.channels,
+        )
         dev = to_device(model)
         optimizer = create_optimizer(model, lr=cfg.learning_rate)
         buffer = ReplayBuffer(cfg.buffer_capacity, device=dev)
@@ -124,12 +130,36 @@ def main() -> None:
             buffer.load(args.load_buffer)
 
     if args.self_play:
-        data = self_play(model, num_simulations=cfg.num_simulations, num_players=cfg.num_players)
+        if cfg.parallel_games > 1:
+            data = self_play_parallel(
+                model,
+                num_games=cfg.parallel_games,
+                num_simulations=cfg.num_simulations,
+                num_players=cfg.num_players,
+            )
+        else:
+            data = self_play(model, num_simulations=cfg.num_simulations, num_players=cfg.num_players)
         buffer.add(data)
         print(f"{len(data)} 件のサンプルを生成しました")
     if args.train:
         if len(buffer) == 0:
-            buffer.add(self_play(model, num_simulations=cfg.num_simulations, num_players=cfg.num_players))
+            if cfg.parallel_games > 1:
+                buffer.add(
+                    self_play_parallel(
+                        model,
+                        num_games=cfg.parallel_games,
+                        num_simulations=cfg.num_simulations,
+                        num_players=cfg.num_players,
+                    )
+                )
+            else:
+                buffer.add(
+                    self_play(
+                        model,
+                        num_simulations=cfg.num_simulations,
+                        num_players=cfg.num_players,
+                    )
+                )
         loss = train_step(model, optimizer, buffer, cfg.batch_size)
         print(f"loss={loss:.4f}")
     if args.train_loop or args.train_gui:

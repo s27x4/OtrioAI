@@ -5,6 +5,7 @@ import torch
 from torch import optim
 
 from .mcts import MCTS
+from concurrent.futures import ThreadPoolExecutor
 from .network import OtrioNet, policy_value, state_to_tensor, loss_fn
 from .augmentation import augment_samples
 from .otrio import GameState, Player, Move
@@ -102,6 +103,24 @@ def self_play(
     return samples
 
 
+def self_play_parallel(
+    model: OtrioNet,
+    num_games: int,
+    num_simulations: int = 100,
+    num_players: int = 2,
+) -> List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
+    """複数ゲームを並列に自己対戦しデータを生成"""
+    results: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = []
+
+    def worker(_: int):
+        return self_play(model, num_simulations=num_simulations, num_players=num_players)
+
+    with ThreadPoolExecutor() as ex:
+        for data in ex.map(worker, range(num_games)):
+            results.extend(data)
+    return results
+
+
 def train_step(
     model: OtrioNet,
     optimizer: optim.Optimizer,
@@ -151,11 +170,12 @@ def load_training_state(
     learning_rate: float = 1e-3,
     buffer_capacity: int = 10000,
     num_blocks: int = 0,
+    channels: int = 128,
     device: str | torch.device | None = None,
 ) -> Tuple[OtrioNet, optim.Optimizer, ReplayBuffer]:
     """保存された学習状態を読み込む"""
     data = torch.load(path, map_location=torch.device("cpu"))
-    model = OtrioNet(num_players=num_players, num_blocks=num_blocks)
+    model = OtrioNet(num_players=num_players, num_blocks=num_blocks, channels=channels)
     model.load_state_dict(data.get("model", {}))
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     if "optimizer" in data:

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import torch
 
 from .config import load_config, Config
-from .training import self_play, ReplayBuffer, train_step
+from .training import self_play, self_play_parallel, ReplayBuffer, train_step
 from .network import OtrioNet, create_optimizer
 
 
@@ -25,7 +25,11 @@ def train_gui_loop(
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if model is None:
-        model = OtrioNet(num_players=cfg.num_players, num_blocks=cfg.num_blocks)
+        model = OtrioNet(
+            num_players=cfg.num_players,
+            num_blocks=cfg.num_blocks,
+            channels=cfg.channels,
+        )
         model.to(device)
     else:
         model.to(device)
@@ -44,9 +48,17 @@ def train_gui_loop(
     ax.legend()
 
     for i in range(num_iterations):
-        data = self_play(
-            model, num_simulations=cfg.num_simulations, num_players=cfg.num_players
-        )
+        if cfg.parallel_games > 1:
+            data = self_play_parallel(
+                model,
+                num_games=cfg.parallel_games,
+                num_simulations=cfg.num_simulations,
+                num_players=cfg.num_players,
+            )
+        else:
+            data = self_play(
+                model, num_simulations=cfg.num_simulations, num_players=cfg.num_players
+            )
         buffer.add(data)
         loss = train_step(model, optimizer, buffer, cfg.batch_size)
         losses.append(loss)

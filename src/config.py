@@ -10,6 +10,8 @@ class Config:
     batch_size: int = 128
     num_players: int = 2
     num_blocks: int = 2
+    channels: int = 128
+    parallel_games: int = 1
 
 
 def load_config(path: str = "config.yaml") -> Config:
