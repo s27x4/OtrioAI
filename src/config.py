@@ -12,6 +12,8 @@ class Config:
     num_blocks: int = 2
     channels: int = 128
     parallel_games: int = 1
+    max_moves: int | None = None
+    resign_threshold: float | None = None
 
 
 def load_config(path: str = "config.yaml") -> Config:

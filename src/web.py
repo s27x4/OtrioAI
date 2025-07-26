@@ -128,7 +128,7 @@ async def player_move(move: MoveData):
 
     ai_move = None
     if not state.winner and not state.draw:
-        ai_move, _ = await asyncio.to_thread(mcts.run, state)
+        ai_move, _, _ = await asyncio.to_thread(mcts.run, state)
         state.apply_move(ai_move)
 
     res = await board_state()
@@ -156,6 +156,8 @@ async def train_loop(iterations: int) -> None:
                 num_games=cfg.parallel_games,
                 num_simulations=cfg.num_simulations,
                 num_players=cfg.num_players,
+                max_moves=cfg.max_moves,
+                resign_threshold=cfg.resign_threshold,
             )
         else:
             data = await asyncio.to_thread(
@@ -163,6 +165,8 @@ async def train_loop(iterations: int) -> None:
                 model,
                 num_simulations=cfg.num_simulations,
                 num_players=cfg.num_players,
+                max_moves=cfg.max_moves,
+                resign_threshold=cfg.resign_threshold,
             )
         buffer.add(data)
         loss = await asyncio.to_thread(train_step, model, optimizer, buffer, cfg.batch_size)

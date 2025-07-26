@@ -20,7 +20,7 @@ def test_web_endpoints(monkeypatch):
         def __init__(self, fn, num_simulations=1):
             pass
         def run(self, state):
-            return state.legal_moves()[0], None
+            return state.legal_moves()[0], None, 0.0
 
     called = {}
     def fake_load_model(path, num_players=2, **kwargs):

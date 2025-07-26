@@ -46,7 +46,7 @@ def play_vs_model(path: str, cfg) -> None:
         if state.current_player == Player.PLAYER1:
             move = _prompt_move(state)
         else:
-            move, _ = mcts.run(state)
+            move, _, _ = mcts.run(state)
             print(f"AI: size={move.size} pos=({move.row},{move.col})")
         state.apply_move(move)
     print(state.log())
@@ -136,9 +136,17 @@ def main() -> None:
                 num_games=cfg.parallel_games,
                 num_simulations=cfg.num_simulations,
                 num_players=cfg.num_players,
+                max_moves=cfg.max_moves,
+                resign_threshold=cfg.resign_threshold,
             )
         else:
-            data = self_play(model, num_simulations=cfg.num_simulations, num_players=cfg.num_players)
+            data = self_play(
+                model,
+                num_simulations=cfg.num_simulations,
+                num_players=cfg.num_players,
+                max_moves=cfg.max_moves,
+                resign_threshold=cfg.resign_threshold,
+            )
         buffer.add(data)
         print(f"{len(data)} 件のサンプルを生成しました")
     if args.train:
@@ -150,6 +158,8 @@ def main() -> None:
                         num_games=cfg.parallel_games,
                         num_simulations=cfg.num_simulations,
                         num_players=cfg.num_players,
+                        max_moves=cfg.max_moves,
+                        resign_threshold=cfg.resign_threshold,
                     )
                 )
             else:
@@ -158,6 +168,8 @@ def main() -> None:
                         model,
                         num_simulations=cfg.num_simulations,
                         num_players=cfg.num_players,
+                        max_moves=cfg.max_moves,
+                        resign_threshold=cfg.resign_threshold,
                     )
                 )
         loss = train_step(model, optimizer, buffer, cfg.batch_size)

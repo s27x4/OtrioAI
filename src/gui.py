@@ -54,10 +54,16 @@ def train_gui_loop(
                 num_games=cfg.parallel_games,
                 num_simulations=cfg.num_simulations,
                 num_players=cfg.num_players,
+                max_moves=cfg.max_moves,
+                resign_threshold=cfg.resign_threshold,
             )
         else:
             data = self_play(
-                model, num_simulations=cfg.num_simulations, num_players=cfg.num_players
+                model,
+                num_simulations=cfg.num_simulations,
+                num_players=cfg.num_players,
+                max_moves=cfg.max_moves,
+                resign_threshold=cfg.resign_threshold,
             )
         buffer.add(data)
         loss = train_step(model, optimizer, buffer, cfg.batch_size)

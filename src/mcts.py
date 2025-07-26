@@ -84,8 +84,9 @@ class MCTS:
             node.value_sum += value
             value = -value  # switch perspective
 
-    def run(self, state: GameState) -> Tuple[Move, Dict[Move, int]]:
-        """状態 `state` から探索を行い、最善手と訪問回数分布を返す"""
+    def run(self, state: GameState) -> Tuple[Move, Dict[Move, int], float]:
+        """状態 `state` から探索を行い、最善手と訪問回数分布、
+        ルートノードの評価値を返す"""
         root = Node(state=state.clone())
         # initial expansion
         self.expand(root)
@@ -115,4 +116,4 @@ class MCTS:
             root.children.items(), key=lambda item: item[1].visit_count
         )
         visit_counts = {m: c.visit_count for m, c in root.children.items()}
-        return best_move, visit_counts
+        return best_move, visit_counts, root.q
