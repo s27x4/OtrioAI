@@ -50,6 +50,7 @@ mcts: MCTS = MCTS(lambda s: policy_value(model, s), num_simulations=cfg.num_simu
 
 train_clients: List[WebSocket] = []
 game_clients: List[WebSocket] = []
+log_clients: List[WebSocket] = []
 training_task: asyncio.Task | None = None
 train_iteration: int = 0
 train_loss: float = 0.0
@@ -108,6 +109,17 @@ async def broadcast_game() -> None:
         except WebSocketDisconnect:
             pass
     game_clients[:] = living
+
+
+async def broadcast_log(message: str) -> None:
+    living: List[WebSocket] = []
+    for ws in log_clients:
+        try:
+            await ws.send_json({"log": message})
+            living.append(ws)
+        except WebSocketDisconnect:
+            pass
+    log_clients[:] = living
 
 
 @app.post("/new_model")
@@ -296,6 +308,7 @@ async def train_loop(iterations: int) -> None:
             train_iteration = i + 1
             train_loss = loss
             await broadcast_train({"iteration": train_iteration, "loss": loss})
+            await broadcast_log(f"iteration {train_iteration}: loss={loss:.4f}")
     except Exception as e:  # pragma: no cover - runtime safety
         training_error = str(e)
     
@@ -320,6 +333,17 @@ async def ws_train(ws: WebSocket):
             await ws.receive_text()
     except WebSocketDisconnect:
         train_clients.remove(ws)
+
+
+@app.websocket("/ws/log")
+async def ws_log(ws: WebSocket):
+    await ws.accept()
+    log_clients.append(ws)
+    try:
+        while True:
+            await ws.receive_text()
+    except WebSocketDisconnect:
+        log_clients.remove(ws)
 
 
 @app.websocket("/ws/game")
