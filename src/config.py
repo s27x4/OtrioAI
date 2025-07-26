@@ -22,7 +22,7 @@ def load_config(path: str = "config.yaml") -> Config:
     """
 
     try:
-        with open(path, "r") as f:
+        with open(path, "r", encoding="utf-8") as f:
             data: Dict[str, Any] = yaml.safe_load(f) or {}
     except FileNotFoundError:
         data = {}
