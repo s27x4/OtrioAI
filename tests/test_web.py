@@ -86,3 +86,23 @@ def test_new_model(monkeypatch):
     assert res.status_code == 200
     assert res.json()["status"] == "created"
 
+
+def test_stop_training(monkeypatch):
+    import src.web as web
+
+    def fake_load_config():
+        return Config(num_simulations=1, buffer_capacity=10, learning_rate=0.001, batch_size=1, num_players=2)
+
+    monkeypatch.setattr(web, "load_config", fake_load_config)
+    web = importlib.reload(web)
+
+    client = TestClient(web.app)
+    res = client.post("/train", json={"iterations": 10})
+    assert res.status_code == 200
+    assert res.json()["status"] == "started"
+
+    res = client.post("/stop")
+    assert res.status_code == 200
+    assert res.json()["status"] == "stopped"
+    assert web.stop_training_flag is True
+
