@@ -9,7 +9,7 @@ OtrioAI はボードゲーム **Otrio** を AI 学習させるための実験プ
 ## 依存ライブラリ
 ゲーム環境や MCTS は Python 標準ライブラリで動作しますが、
 ニューラルネットワーク実装には PyTorch を利用しています。
-`requirements.txt` に記載のライブラリをインストールしてください。
+バージョン固定済みの `requirements.txt` に記載されたライブラリをインストールしてください。
 推奨 Python バージョンは 3.10 以上です。
 
 ## 実行方法
@@ -113,6 +113,6 @@ Otrio では次のような勝利条件があります。
 テストは `pytest` を利用する想定です。テスト追加後は以下を実行してください。
 
 ```bash
-pip install -r requirements.txt  # 依存ライブラリ追加時
+pip install -r requirements.txt  # バージョン固定済みの依存ライブラリをインストール
 pytest
 ```

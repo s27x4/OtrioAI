@@ -1,6 +1,6 @@
-torch
-pyyaml
-matplotlib
-fastapi
-uvicorn
-gymnasium
+torch==2.7.1
+pyyaml==6.0.2
+matplotlib==3.10.3
+fastapi==0.116.1
+uvicorn==0.35.0
+gymnasium==1.2.0
