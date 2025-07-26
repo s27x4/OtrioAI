@@ -71,3 +71,18 @@ def test_ws_train(monkeypatch):
         data = ws.receive_json()
         assert data["iteration"] == 1
 
+
+def test_new_model(monkeypatch):
+    import src.web as web
+
+    def fake_load_config():
+        return Config(num_simulations=1, buffer_capacity=10, learning_rate=0.001, batch_size=1, num_players=2)
+
+    monkeypatch.setattr(web, "load_config", fake_load_config)
+    web = importlib.reload(web)
+
+    client = TestClient(web.app)
+    res = client.post("/new_model")
+    assert res.status_code == 200
+    assert res.json()["status"] == "created"
+

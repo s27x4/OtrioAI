@@ -110,6 +110,23 @@ async def broadcast_game() -> None:
     game_clients[:] = living
 
 
+@app.post("/new_model")
+async def new_model():
+    """ネットワークとバッファを新規作成"""
+    global model, optimizer, buffer, mcts
+    model = OtrioNet(
+        num_players=cfg.num_players,
+        num_blocks=cfg.num_blocks,
+        channels=cfg.channels,
+    )
+    model.to(device)
+    optimizer = create_optimizer(model, lr=cfg.learning_rate)
+    buffer = ReplayBuffer(cfg.buffer_capacity, device=device)
+    mcts = MCTS(lambda s: policy_value(model, s), num_simulations=cfg.num_simulations)
+    reset()
+    return {"status": "created"}
+
+
 def available_models() -> list[str]:
     if not env_dir.exists():
         return []

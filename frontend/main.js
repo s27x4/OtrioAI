@@ -88,8 +88,11 @@ document.addEventListener('DOMContentLoaded', () => {
     post('/stop', {});
   };
   document.getElementById('save_model').onclick = () => {
-    const name = document.getElementById('model_select').value || 'model.pt';
+    const name = document.getElementById('save_name').value || 'model.pt';
     post('/model_save', {path: name}).then(updateModelList);
+  };
+  document.getElementById('new_model').onclick = () => {
+    post('/new_model', {}).then(updateModelList);
   };
   document.getElementById('load_model').onclick = () => {
     const name = document.getElementById('model_select').value;
