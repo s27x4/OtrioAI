@@ -101,7 +101,9 @@ def policy_value(model: OtrioNet, state: GameState) -> Tuple[Dict[Move, float], 
     for move, p in zip(moves, policy):
         idx = move.size * 9 + move.row * 3 + move.col
         prob[idx] = p
-    move_probs = {move: prob[move.size * 9 + move.row * 3 + move.col].item() for move in moves}
+    move_probs = {
+        move: prob[move.size * 9 + move.row * 3 + move.col].item() for move in moves
+    }
     return move_probs, value.item()
 
 
@@ -124,9 +126,11 @@ def save_model(model: OtrioNet, path: str) -> None:
     torch.save({"model": model.state_dict()}, path)
 
 
-def load_model(path: str, num_players: int = 2, num_blocks: int = 0, channels: int = 128) -> OtrioNet:
+def load_model(
+    path: str, num_players: int = 2, num_blocks: int = 0, channels: int = 128
+) -> OtrioNet:
     """保存済みモデルを読み込む"""
-    data = torch.load(path, map_location=torch.device("cpu"))
+    data = torch.load(path, weights_only=True, map_location=torch.device("cpu"))
     if isinstance(data, dict) and "model" in data:
         state_dict = data["model"]
     else:
