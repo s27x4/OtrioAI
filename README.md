@@ -79,20 +79,20 @@ python -m src.cli --play-model model.pt
 ### FastAPI ベースの WebUI
 
 学習や対戦は FastAPI で提供される WebUI から操作できます。
+`python -m src.web` を実行した後、ブラウザで `http://localhost:8000/ui` にアクセスするとダッシュボードが表示されます。
 
 ```bash
 python -m src.web --model model.pt
 ```
 
 ブラウザで `http://localhost:8000/docs` を開くと API ドキュメントが表示されます。
-`/ws/train` へ WebSocket 接続すると学習損失の更新が受け取れます。
-`/ws/game` に接続したまま `POST /start` や `POST /move` を実行すると、盤面の更新がリアルタイムに送信されます。
+従来のように `/ws/train` や `/ws/game` へ WebSocket 接続して API を直接呼び出すことも可能ですが、
+`/ui` の画面から学習開始・停止、モデル保存、対戦の操作まで一通り行えます。
 
 ### WebUI から学習進捗を確認
 
-GUI は廃止され、代わりに WebSocket で損失値を受信してブラウザ側で可視化します。
-`POST /train` に `{"iterations": 10}` のように回数を渡すと学習が始まり、
-`/ws/train` へ接続したクライアントに `{"iteration": i, "loss": L}` が順次送られます。
+GUI は廃止され、WebUI では学習損失のグラフやゲーム盤がリアルタイム更新されます。
+`/ui` にアクセスして学習回数を入力し「学習開始」を押すだけで進捗を確認できます。
 
 ## Otrio ルール概要と実装状況
 Otrio では次のような勝利条件があります。

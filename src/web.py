@@ -11,6 +11,8 @@ from typing import List
 import torch
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Body
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 from pydantic import BaseModel
 
 from .config import load_config, Config
@@ -26,6 +28,9 @@ from .otrio import GameState, Move, Player
 
 
 app = FastAPI()
+frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
+if frontend_dir.exists():
+    app.mount("/ui", StaticFiles(directory=str(frontend_dir), html=True), name="ui")
 
 cfg: Config = load_config()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -45,6 +50,9 @@ mcts: MCTS = MCTS(lambda s: policy_value(model, s), num_simulations=cfg.num_simu
 train_clients: List[WebSocket] = []
 game_clients: List[WebSocket] = []
 training_task: asyncio.Task | None = None
+train_iteration: int = 0
+train_loss: float = 0.0
+training_error: str | None = None
 
 
 def reset(model_path: str | None = None) -> None:
@@ -143,41 +151,111 @@ async def get_state():
     return await board_state()
 
 
+@app.get("/training_status")
+async def training_status():
+    status = "running" if training_task and not training_task.done() else "idle"
+    return {
+        "status": status,
+        "iteration": train_iteration,
+        "loss": train_loss,
+        "error": training_error,
+    }
+
+
+@app.post("/update_training_settings")
+async def update_training_settings(settings: dict = Body(...)):
+    global cfg, optimizer
+    for k, v in settings.items():
+        if hasattr(cfg, k):
+            setattr(cfg, k, v)
+            if k == "learning_rate":
+                for group in optimizer.param_groups:
+                    group["lr"] = v
+    return {"status": "updated"}
+
+
+@app.post("/model_save")
+async def model_save(data: dict = Body(default={"path": "model.pt"})):
+    from .training import save_training_state
+
+    path = data.get("path", "model.pt")
+    await asyncio.to_thread(save_training_state, model, optimizer, buffer, path)
+    return {"status": "saved", "path": path}
+
+
+@app.post("/model_load")
+async def model_load(data: dict = Body(default={"path": "model.pt"})):
+    from .training import load_training_state
+
+    path = data.get("path", "model.pt")
+    global model, optimizer, buffer, mcts
+    model, optimizer, buffer = await asyncio.to_thread(
+        load_training_state,
+        path,
+        num_players=cfg.num_players,
+        learning_rate=cfg.learning_rate,
+        buffer_capacity=cfg.buffer_capacity,
+        num_blocks=cfg.num_blocks,
+        channels=cfg.channels,
+        device=device,
+    )
+    mcts = MCTS(lambda s: policy_value(model, s), num_simulations=cfg.num_simulations)
+    return {"status": "loaded", "path": path}
+
+
+@app.post("/stop")
+async def stop_training():
+    global training_task
+    if training_task:
+        training_task.cancel()
+    training_task = None
+    return {"status": "stopped"}
+
+
 class TrainRequest(BaseModel):
     iterations: int = 1
 
 
 async def train_loop(iterations: int) -> None:
-    for i in range(iterations):
-        if cfg.parallel_games > 1:
-            data = await asyncio.to_thread(
-                self_play_parallel,
+    global train_iteration, train_loss, training_error
+    training_error = None
+    try:
+        for i in range(iterations):
+            if cfg.parallel_games > 1:
+                data = await asyncio.to_thread(
+                    self_play_parallel,
+                    model,
+                    num_games=cfg.parallel_games,
+                    num_simulations=cfg.num_simulations,
+                    num_players=cfg.num_players,
+                    max_moves=cfg.max_moves,
+                    resign_threshold=cfg.resign_threshold,
+                )
+            else:
+                data = await asyncio.to_thread(
+                    self_play,
+                    model,
+                    num_simulations=cfg.num_simulations,
+                    num_players=cfg.num_players,
+                    max_moves=cfg.max_moves,
+                    resign_threshold=cfg.resign_threshold,
+                )
+            buffer.add(data)
+            loss = await asyncio.to_thread(
+                train_step,
                 model,
-                num_games=cfg.parallel_games,
-                num_simulations=cfg.num_simulations,
-                num_players=cfg.num_players,
-                max_moves=cfg.max_moves,
-                resign_threshold=cfg.resign_threshold,
+                optimizer,
+                buffer,
+                cfg.batch_size,
+                cfg.value_loss_weight,
             )
-        else:
-            data = await asyncio.to_thread(
-                self_play,
-                model,
-                num_simulations=cfg.num_simulations,
-                num_players=cfg.num_players,
-                max_moves=cfg.max_moves,
-                resign_threshold=cfg.resign_threshold,
-            )
-        buffer.add(data)
-        loss = await asyncio.to_thread(
-            train_step,
-            model,
-            optimizer,
-            buffer,
-            cfg.batch_size,
-            cfg.value_loss_weight,
-        )
-        await broadcast_train({"iteration": i + 1, "loss": loss})
+            train_iteration = i + 1
+            train_loss = loss
+            await broadcast_train({"iteration": train_iteration, "loss": loss})
+    except Exception as e:  # pragma: no cover - runtime safety
+        training_error = str(e)
+    
+    
 
 
 @app.post("/train")
