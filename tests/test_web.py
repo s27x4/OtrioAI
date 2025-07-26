@@ -34,6 +34,7 @@ def test_web_endpoints(monkeypatch, tmp_path):
 
     monkeypatch.setattr(web, "MCTS", DummyMCTS)
     monkeypatch.setattr(web, "load_model", fake_load_model)
+    web.app.state.manager = web.OtrioApp(web.cfg)
 
     client = TestClient(web.app)
 
@@ -58,11 +59,13 @@ def test_ws_train(monkeypatch):
 
     monkeypatch.setattr(web, "load_config", fake_load_config)
     web = importlib.reload(web)
+    web.app.state.manager = web.OtrioApp(web.cfg)
 
-    async def dummy_train_loop(*args, **kwargs):
-        await web.broadcast_train({"iteration": 1, "loss": 0.5})
+    async def dummy_train_loop(self, *args, **kwargs):
+        await self.broadcast_train({"iteration": 1, "loss": 0.5})
 
-    monkeypatch.setattr(web, "train_loop", dummy_train_loop)
+    monkeypatch.setattr(web.OtrioApp, "train_loop", dummy_train_loop)
+    web.app.state.manager = web.OtrioApp(web.cfg)
 
     client = TestClient(web.app)
     with client.websocket_connect("/ws/train") as ws:
@@ -80,11 +83,13 @@ def test_ws_log(monkeypatch):
 
     monkeypatch.setattr(web, "load_config", fake_load_config)
     web = importlib.reload(web)
+    web.app.state.manager = web.OtrioApp(web.cfg)
 
-    async def dummy_train_loop(*args, **kwargs):
-        await web.broadcast_log("debug message")
+    async def dummy_train_loop(self, *args, **kwargs):
+        await self.broadcast_log("debug message")
 
-    monkeypatch.setattr(web, "train_loop", dummy_train_loop)
+    monkeypatch.setattr(web.OtrioApp, "train_loop", dummy_train_loop)
+    web.app.state.manager = web.OtrioApp(web.cfg)
 
     client = TestClient(web.app)
     with client.websocket_connect("/ws/log") as ws:
@@ -126,5 +131,5 @@ def test_stop_training(monkeypatch):
     res = client.post("/stop")
     assert res.status_code == 200
     assert res.json()["status"] == "stopped"
-    assert web.stop_training_flag is True
+    assert web.app.state.manager.stop_training_flag is True
 
