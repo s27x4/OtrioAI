@@ -126,6 +126,7 @@ def train_step(
     optimizer: optim.Optimizer,
     buffer: ReplayBuffer,
     batch_size: int,
+    value_weight: float = 1.0,
 ) -> float:
     model.train()
     device = next(model.parameters()).device
@@ -138,7 +139,7 @@ def train_step(
     values = values.to(device)
     optimizer.zero_grad()
     policy_logits, value_pred = model(states)
-    loss = loss_fn(policy_logits, value_pred, policies, values)
+    loss = loss_fn(policy_logits, value_pred, policies, values, value_weight)
     loss.backward()
     optimizer.step()
     return loss.item()

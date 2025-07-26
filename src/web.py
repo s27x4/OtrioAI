@@ -165,7 +165,14 @@ async def train_loop(iterations: int) -> None:
                 num_players=cfg.num_players,
             )
         buffer.add(data)
-        loss = await asyncio.to_thread(train_step, model, optimizer, buffer, cfg.batch_size)
+        loss = await asyncio.to_thread(
+            train_step,
+            model,
+            optimizer,
+            buffer,
+            cfg.batch_size,
+            cfg.value_loss_weight,
+        )
         await broadcast_train({"iteration": i + 1, "loss": loss})
 
 

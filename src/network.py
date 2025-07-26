@@ -110,12 +110,13 @@ def loss_fn(
     value: torch.Tensor,
     target_policy: torch.Tensor,
     target_value: torch.Tensor,
+    value_weight: float = 1.0,
 ) -> torch.Tensor:
     """policy は確率分布を期待する"""
     log_p = F.log_softmax(policy_logits, dim=1)
     policy_loss = -(target_policy * log_p).sum(dim=1).mean()
     value_loss = F.mse_loss(value, target_value)
-    return policy_loss + value_loss
+    return policy_loss + value_weight * value_loss
 
 
 def save_model(model: OtrioNet, path: str) -> None:
