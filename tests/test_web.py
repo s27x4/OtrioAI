@@ -17,9 +17,8 @@ def test_web_endpoints(monkeypatch, tmp_path):
     env_path.mkdir()
     (env_path / "foo.pt").write_text("dummy")
     monkeypatch.setattr(web, "load_config", fake_load_config)
-    monkeypatch.setattr(web, "env_dir", env_path)
     web = importlib.reload(web)
-    monkeypatch.setattr(web, "env_dir", env_path)
+    web.app.state.otrio.env_dir = env_path
 
     class DummyMCTS:
         def __init__(self, fn, num_simulations=1):
@@ -60,9 +59,9 @@ def test_ws_train(monkeypatch):
     web = importlib.reload(web)
 
     async def dummy_train_loop(*args, **kwargs):
-        await web.broadcast_train({"iteration": 1, "loss": 0.5})
+        await web.get_otrio().broadcast_train({"iteration": 1, "loss": 0.5})
 
-    monkeypatch.setattr(web, "train_loop", dummy_train_loop)
+    monkeypatch.setattr(web.get_otrio(), "train_loop", dummy_train_loop)
 
     client = TestClient(web.app)
     with client.websocket_connect("/ws/train") as ws:
@@ -104,5 +103,5 @@ def test_stop_training(monkeypatch):
     res = client.post("/stop")
     assert res.status_code == 200
     assert res.json()["status"] == "stopped"
-    assert web.stop_training_flag is True
+    assert web.get_otrio().stop_training_flag is True
 

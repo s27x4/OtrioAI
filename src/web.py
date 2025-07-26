@@ -31,125 +31,182 @@ app = FastAPI()
 frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
 if frontend_dir.exists():
     app.mount("/ui", StaticFiles(directory=str(frontend_dir), html=True), name="ui")
-env_dir = Path(__file__).resolve().parent.parent / "env"
-
-cfg: Config = load_config()
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-state: GameState = GameState(num_players=cfg.num_players)
-model: OtrioNet = OtrioNet(
-    num_players=cfg.num_players,
-    num_blocks=cfg.num_blocks,
-    channels=cfg.channels,
-)
-model.to(device)
-optimizer = create_optimizer(model, lr=cfg.learning_rate)
-buffer = ReplayBuffer(cfg.buffer_capacity, device=device)
-
-mcts: MCTS = MCTS(lambda s: policy_value(model, s), num_simulations=cfg.num_simulations)
-
-train_clients: List[WebSocket] = []
-game_clients: List[WebSocket] = []
-training_task: asyncio.Task | None = None
-train_iteration: int = 0
-train_loss: float = 0.0
-training_error: str | None = None
-stop_training_flag: bool = False
 
 
-def reset(model_path: str | None = None) -> None:
-    """\ゲーム状態とモデルを初期化"""
+class OtrioApp:
+    """グローバル状態をまとめるクラス"""
 
-    global state, model, mcts
-    state = GameState(num_players=cfg.num_players)
-    if model_path:
-        loaded = load_model(
-            model_path,
-            num_players=cfg.num_players,
-            num_blocks=cfg.num_blocks,
-            channels=cfg.channels,
+    def __init__(self, cfg: Config | None = None, env_dir: Path | None = None) -> None:
+        self.cfg: Config = cfg or load_config()
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.env_dir = env_dir or Path(__file__).resolve().parent.parent / "env"
+
+        self.train_clients: List[WebSocket] = []
+        self.game_clients: List[WebSocket] = []
+
+        self.training_task: asyncio.Task | None = None
+        self.train_iteration: int = 0
+        self.train_loss: float = 0.0
+        self.training_error: str | None = None
+        self.stop_training_flag: bool = False
+
+        self.new_model()
+
+    def new_model(self) -> None:
+        """ネットワークとバッファを新規作成"""
+        self.model: OtrioNet = OtrioNet(
+            num_players=self.cfg.num_players,
+            num_blocks=self.cfg.num_blocks,
+            channels=self.cfg.channels,
         )
-        if loaded is not None:
-            model = loaded
-            model.to(device)
-    mcts = MCTS(lambda s: policy_value(model, s), num_simulations=cfg.num_simulations)
+        self.model.to(self.device)
+        self.optimizer = create_optimizer(self.model, lr=self.cfg.learning_rate)
+        self.buffer = ReplayBuffer(self.cfg.buffer_capacity, device=self.device)
+        self.mcts: MCTS = MCTS(
+            lambda s: policy_value(self.model, s),
+            num_simulations=self.cfg.num_simulations,
+        )
+        self.reset()
+
+    def reset(self, model_path: str | None = None) -> None:
+        """ゲーム状態とモデルを初期化"""
+
+        self.state = GameState(num_players=self.cfg.num_players)
+        if model_path:
+            loaded = load_model(
+                model_path,
+                num_players=self.cfg.num_players,
+                num_blocks=self.cfg.num_blocks,
+                channels=self.cfg.channels,
+            )
+            if loaded is not None:
+                self.model = loaded
+                self.model.to(self.device)
+        self.mcts = MCTS(
+            lambda s: policy_value(self.model, s),
+            num_simulations=self.cfg.num_simulations,
+        )
+
+    def available_models(self) -> list[str]:
+        if not self.env_dir.exists():
+            return []
+        return sorted([p.name for p in self.env_dir.glob("*.pt")])
+
+    def update_training_settings(self, settings: dict) -> None:
+        for k, v in settings.items():
+            if hasattr(self.cfg, k):
+                setattr(self.cfg, k, v)
+                if k == "learning_rate":
+                    for group in self.optimizer.param_groups:
+                        group["lr"] = v
+
+    async def board_state(self) -> dict:
+        return {
+            "board": _board_to_list(self.state),
+            "current": self.state.current_player.name,
+            "winner": self.state.winner.name if self.state.winner else None,
+            "draw": self.state.draw,
+        }
+
+    async def broadcast_train(self, message: dict) -> None:
+        living: List[WebSocket] = []
+        for ws in self.train_clients:
+            try:
+                await ws.send_json(message)
+                living.append(ws)
+            except WebSocketDisconnect:
+                pass
+        self.train_clients[:] = living
+
+    async def broadcast_game(self) -> None:
+        data = await self.board_state()
+        living: List[WebSocket] = []
+        for ws in self.game_clients:
+            try:
+                await ws.send_json(data)
+                living.append(ws)
+            except WebSocketDisconnect:
+                pass
+        self.game_clients[:] = living
+
+    async def train_loop(self, iterations: int) -> None:
+        self.training_error = None
+        try:
+            for i in range(iterations):
+                if self.stop_training_flag:
+                    break
+                if self.cfg.parallel_games > 1:
+                    data = await asyncio.to_thread(
+                        self_play_parallel,
+                        self.model,
+                        num_games=self.cfg.parallel_games,
+                        num_simulations=self.cfg.num_simulations,
+                        num_players=self.cfg.num_players,
+                        max_moves=self.cfg.max_moves,
+                        resign_threshold=self.cfg.resign_threshold,
+                    )
+                else:
+                    data = await asyncio.to_thread(
+                        self_play,
+                        self.model,
+                        num_simulations=self.cfg.num_simulations,
+                        num_players=self.cfg.num_players,
+                        max_moves=self.cfg.max_moves,
+                        resign_threshold=self.cfg.resign_threshold,
+                    )
+                self.buffer.add(data)
+                if self.stop_training_flag:
+                    break
+                loss = await asyncio.to_thread(
+                    train_step,
+                    self.model,
+                    self.optimizer,
+                    self.buffer,
+                    self.cfg.batch_size,
+                    self.cfg.value_loss_weight,
+                )
+                self.train_iteration = i + 1
+                self.train_loss = loss
+                await self.broadcast_train({"iteration": self.train_iteration, "loss": loss})
+        except Exception as e:  # pragma: no cover - runtime safety
+            self.training_error = str(e)
+
+
+otrio_app = OtrioApp()
+app.state.otrio = otrio_app
+
+
+def get_otrio() -> OtrioApp:
+    return app.state.otrio
 
 
 def _board_to_list(state: GameState) -> list:
     return [[[p.value for p in row] for row in size] for size in state.board]
 
 
-async def board_state() -> dict:
-    return {
-        "board": _board_to_list(state),
-        "current": state.current_player.name,
-        "winner": state.winner.name if state.winner else None,
-        "draw": state.draw,
-    }
-
-
-async def broadcast_train(message: dict) -> None:
-    living: List[WebSocket] = []
-    for ws in train_clients:
-        try:
-            await ws.send_json(message)
-            living.append(ws)
-        except WebSocketDisconnect:
-            pass
-    train_clients[:] = living
-
-
-async def broadcast_game() -> None:
-    data = await board_state()
-    living: List[WebSocket] = []
-    for ws in game_clients:
-        try:
-            await ws.send_json(data)
-            living.append(ws)
-        except WebSocketDisconnect:
-            pass
-    game_clients[:] = living
-
-
 @app.post("/new_model")
 async def new_model():
-    """ネットワークとバッファを新規作成"""
-    global model, optimizer, buffer, mcts
-    model = OtrioNet(
-        num_players=cfg.num_players,
-        num_blocks=cfg.num_blocks,
-        channels=cfg.channels,
-    )
-    model.to(device)
-    optimizer = create_optimizer(model, lr=cfg.learning_rate)
-    buffer = ReplayBuffer(cfg.buffer_capacity, device=device)
-    mcts = MCTS(lambda s: policy_value(model, s), num_simulations=cfg.num_simulations)
-    reset()
+    get_otrio().new_model()
     return {"status": "created"}
-
-
-def available_models() -> list[str]:
-    if not env_dir.exists():
-        return []
-    return sorted([p.name for p in env_dir.glob("*.pt")])
 
 
 @app.get("/models")
 async def get_models():
-    return {"models": available_models()}
+    return {"models": get_otrio().available_models()}
 
 
 @app.post("/start")
 async def start_game(data: dict = Body(default={})):  # pragma: no cover - simple wrapper
     path = data.get("model") if data else None
+    otrio = get_otrio()
     if path:
         p = Path(path)
         if not p.is_absolute() and not p.exists():
-            candidate = env_dir / p.name
+            candidate = otrio.env_dir / p.name
             if candidate.exists():
                 path = str(candidate)
-    reset(path)
-    await broadcast_game()
+    otrio.reset(path)
+    await otrio.broadcast_game()
     return {"status": "ok"}
 
 
@@ -161,7 +218,8 @@ class MoveData(BaseModel):
 
 @app.post("/move")
 async def player_move(move: MoveData):
-    global state
+    otrio = get_otrio()
+    state = otrio.state
     if not (0 <= move.row < 3 and 0 <= move.col < 3 and 0 <= move.size < 3):
         return JSONResponse({"error": "out_of_range"}, status_code=400)
     if state.board[move.size][move.row][move.col] != Player.NONE:
@@ -172,41 +230,36 @@ async def player_move(move: MoveData):
 
     ai_move = None
     if not state.winner and not state.draw:
-        ai_move, _, _ = await asyncio.to_thread(mcts.run, state)
+        ai_move, _, _ = await asyncio.to_thread(otrio.mcts.run, state)
         state.apply_move(ai_move)
 
-    res = await board_state()
+    res = await otrio.board_state()
     if ai_move:
         res["ai"] = {"row": ai_move.row, "col": ai_move.col, "size": ai_move.size}
-    await broadcast_game()
+    await otrio.broadcast_game()
     return res
 
 
 @app.get("/state")
 async def get_state():
-    return await board_state()
+    return await get_otrio().board_state()
 
 
 @app.get("/training_status")
 async def training_status():
-    status = "running" if training_task and not training_task.done() else "idle"
+    otrio = get_otrio()
+    status = "running" if otrio.training_task and not otrio.training_task.done() else "idle"
     return {
         "status": status,
-        "iteration": train_iteration,
-        "loss": train_loss,
-        "error": training_error,
+        "iteration": otrio.train_iteration,
+        "loss": otrio.train_loss,
+        "error": otrio.training_error,
     }
 
 
 @app.post("/update_training_settings")
 async def update_training_settings(settings: dict = Body(...)):
-    global cfg, optimizer
-    for k, v in settings.items():
-        if hasattr(cfg, k):
-            setattr(cfg, k, v)
-            if k == "learning_rate":
-                for group in optimizer.param_groups:
-                    group["lr"] = v
+    get_otrio().update_training_settings(settings)
     return {"status": "updated"}
 
 
@@ -214,11 +267,12 @@ async def update_training_settings(settings: dict = Body(...)):
 async def model_save(data: dict = Body(default={"path": "model.pt"})):
     from .training import save_training_state
 
+    otrio = get_otrio()
     path = data.get("path", "model.pt")
     p = Path(path)
     if not p.is_absolute():
-        p = env_dir / p.name
-    await asyncio.to_thread(save_training_state, model, optimizer, buffer, str(p))
+        p = otrio.env_dir / p.name
+    await asyncio.to_thread(save_training_state, otrio.model, otrio.optimizer, otrio.buffer, str(p))
     return {"status": "saved", "path": str(p)}
 
 
@@ -226,35 +280,35 @@ async def model_save(data: dict = Body(default={"path": "model.pt"})):
 async def model_load(data: dict = Body(default={"path": "model.pt"})):
     from .training import load_training_state
 
+    otrio = get_otrio()
     path = data.get("path", "model.pt")
     p = Path(path)
     if not p.is_absolute() and not p.exists():
-        candidate = env_dir / p.name
+        candidate = otrio.env_dir / p.name
         if candidate.exists():
             p = candidate
     path = str(p)
-    global model, optimizer, buffer, mcts
-    model, optimizer, buffer = await asyncio.to_thread(
+    otrio.model, otrio.optimizer, otrio.buffer = await asyncio.to_thread(
         load_training_state,
         path,
-        num_players=cfg.num_players,
-        learning_rate=cfg.learning_rate,
-        buffer_capacity=cfg.buffer_capacity,
-        num_blocks=cfg.num_blocks,
-        channels=cfg.channels,
-        device=device,
+        num_players=otrio.cfg.num_players,
+        learning_rate=otrio.cfg.learning_rate,
+        buffer_capacity=otrio.cfg.buffer_capacity,
+        num_blocks=otrio.cfg.num_blocks,
+        channels=otrio.cfg.channels,
+        device=otrio.device,
     )
-    mcts = MCTS(lambda s: policy_value(model, s), num_simulations=cfg.num_simulations)
+    otrio.mcts = MCTS(lambda s: policy_value(otrio.model, s), num_simulations=otrio.cfg.num_simulations)
     return {"status": "loaded", "path": path}
 
 
 @app.post("/stop")
 async def stop_training():
-    global training_task, stop_training_flag
-    stop_training_flag = True
-    if training_task:
-        training_task.cancel()
-    training_task = None
+    otrio = get_otrio()
+    otrio.stop_training_flag = True
+    if otrio.training_task:
+        otrio.training_task.cancel()
+    otrio.training_task = None
     return {"status": "stopped"}
 
 
@@ -262,83 +316,39 @@ class TrainRequest(BaseModel):
     iterations: int = 1
 
 
-async def train_loop(iterations: int) -> None:
-    global train_iteration, train_loss, training_error, stop_training_flag
-    training_error = None
-    try:
-        for i in range(iterations):
-            if stop_training_flag:
-                break
-            if cfg.parallel_games > 1:
-                data = await asyncio.to_thread(
-                    self_play_parallel,
-                    model,
-                    num_games=cfg.parallel_games,
-                    num_simulations=cfg.num_simulations,
-                    num_players=cfg.num_players,
-                    max_moves=cfg.max_moves,
-                    resign_threshold=cfg.resign_threshold,
-                )
-            else:
-                data = await asyncio.to_thread(
-                    self_play,
-                    model,
-                    num_simulations=cfg.num_simulations,
-                    num_players=cfg.num_players,
-                    max_moves=cfg.max_moves,
-                    resign_threshold=cfg.resign_threshold,
-                )
-            buffer.add(data)
-            if stop_training_flag:
-                break
-            loss = await asyncio.to_thread(
-                train_step,
-                model,
-                optimizer,
-                buffer,
-                cfg.batch_size,
-                cfg.value_loss_weight,
-            )
-            train_iteration = i + 1
-            train_loss = loss
-            await broadcast_train({"iteration": train_iteration, "loss": loss})
-    except Exception as e:  # pragma: no cover - runtime safety
-        training_error = str(e)
-    
-    
-
-
 @app.post("/train")
 async def start_train(req: TrainRequest):
-    global training_task, stop_training_flag
-    stop_training_flag = False
-    if training_task and not training_task.done():
+    otrio = get_otrio()
+    otrio.stop_training_flag = False
+    if otrio.training_task and not otrio.training_task.done():
         return {"status": "running"}
-    training_task = asyncio.create_task(train_loop(req.iterations))
+    otrio.training_task = asyncio.create_task(otrio.train_loop(req.iterations))
     return {"status": "started"}
 
 
 @app.websocket("/ws/train")
 async def ws_train(ws: WebSocket):
+    otrio = get_otrio()
     await ws.accept()
-    train_clients.append(ws)
+    otrio.train_clients.append(ws)
     try:
         while True:
             await ws.receive_text()
     except WebSocketDisconnect:
-        train_clients.remove(ws)
+        otrio.train_clients.remove(ws)
 
 
 @app.websocket("/ws/game")
 async def ws_game(ws: WebSocket):
+    otrio = get_otrio()
     await ws.accept()
-    game_clients.append(ws)
-    await ws.send_json(await board_state())
+    otrio.game_clients.append(ws)
+    await ws.send_json(await otrio.board_state())
     try:
         while True:
             await ws.receive_text()
     except WebSocketDisconnect:
-        game_clients.remove(ws)
+        otrio.game_clients.remove(ws)
 
 
 def main() -> None:  # pragma: no cover - CLI helper
@@ -348,7 +358,7 @@ def main() -> None:  # pragma: no cover - CLI helper
     parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
 
-    reset(args.model)
+    get_otrio().reset(args.model)
     import uvicorn
 
     uvicorn.run(app, host=args.host, port=args.port)
@@ -356,4 +366,5 @@ def main() -> None:  # pragma: no cover - CLI helper
 
 if __name__ == "__main__":  # pragma: no cover
     main()
+
 
