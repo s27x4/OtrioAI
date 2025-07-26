@@ -116,6 +116,17 @@ def self_play(
     return samples
 
 
+def _self_play_worker(args: tuple) -> list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
+    model, num_simulations, num_players, max_moves, resign_threshold = args
+    return self_play(
+        model,
+        num_simulations=num_simulations,
+        num_players=num_players,
+        max_moves=max_moves,
+        resign_threshold=resign_threshold,
+    )
+
+
 def self_play_parallel(
     model: OtrioNet,
     num_games: int,
@@ -126,18 +137,15 @@ def self_play_parallel(
 ) -> List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
     """複数ゲームを並列に自己対戦しデータを生成"""
     results: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = []
-
-    def worker(_: int):
-        return self_play(
-            model,
-            num_simulations=num_simulations,
-            num_players=num_players,
-            max_moves=max_moves,
-            resign_threshold=resign_threshold,
-        )
-
+    args = (
+        model,
+        num_simulations,
+        num_players,
+        max_moves,
+        resign_threshold,
+    )
     with ProcessPoolExecutor() as ex:
-        for data in ex.map(worker, range(num_games)):
+        for data in ex.map(_self_play_worker, [args] * num_games):
             results.extend(data)
     return results
 
