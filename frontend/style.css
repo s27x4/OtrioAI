@@ -1,3 +1,4 @@
 body { font-family: sans-serif; }
 table { border-collapse: collapse; }
 td { width: 40px; height: 40px; border: 1px solid #ccc; text-align: center; }
+#train_log { border: 1px solid #ccc; height: 200px; overflow: auto; white-space: pre-wrap; }

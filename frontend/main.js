@@ -1,5 +1,6 @@
 let trainWS;
 let gameWS;
+let logWS;
 const lossData = [];
 let chart;
 
@@ -24,6 +25,16 @@ function connectGameWS() {
     const data = JSON.parse(ev.data);
     updateBoard(data.board);
     document.getElementById('winner').textContent = data.winner || '';
+  };
+}
+
+function connectLogWS() {
+  logWS = new WebSocket(`ws://${location.host}/ws/log`);
+  logWS.onmessage = (ev) => {
+    const data = JSON.parse(ev.data);
+    const pre = document.getElementById('train_log');
+    pre.textContent += data.log + '\n';
+    pre.scrollTop = pre.scrollHeight;
   };
 }
 
@@ -78,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   connectTrainWS();
   connectGameWS();
+  connectLogWS();
   updateModelList();
 
   document.getElementById('start_train').onclick = () => {

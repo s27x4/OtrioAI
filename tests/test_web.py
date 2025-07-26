@@ -72,6 +72,28 @@ def test_ws_train(monkeypatch):
         assert data["iteration"] == 1
 
 
+def test_ws_log(monkeypatch):
+    import src.web as web
+
+    def fake_load_config():
+        return Config(num_simulations=1, buffer_capacity=10, learning_rate=0.001, batch_size=1, num_players=2)
+
+    monkeypatch.setattr(web, "load_config", fake_load_config)
+    web = importlib.reload(web)
+
+    async def dummy_train_loop(*args, **kwargs):
+        await web.broadcast_log("debug message")
+
+    monkeypatch.setattr(web, "train_loop", dummy_train_loop)
+
+    client = TestClient(web.app)
+    with client.websocket_connect("/ws/log") as ws:
+        res = client.post("/train", json={"iterations": 1})
+        assert res.status_code == 200
+        data = ws.receive_json()
+        assert data["log"] == "debug message"
+
+
 def test_new_model(monkeypatch):
     import src.web as web
 
