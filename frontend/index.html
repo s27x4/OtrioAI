@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>OtrioAI ダッシュボード</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<h1>OtrioAI ダッシュボード</h1>
+<section id="status">
+  <p>学習状態: <span id="train_status">停止</span></p>
+  <p>進行度: <span id="iteration">0</span></p>
+  <p>最新損失: <span id="loss">0</span></p>
+  <canvas id="lossChart" width="400" height="200"></canvas>
+</section>
+<section id="controls">
+  <h2>学習操作</h2>
+  <label>回数 <input type="number" id="iterations" value="1" min="1"></label>
+  <button id="start_train">学習開始</button>
+  <button id="stop_train">学習停止</button>
+  <button id="save_model">モデル保存</button>
+  <button id="load_model">モデル読み込み</button>
+</section>
+<section id="game">
+  <h2>対戦</h2>
+  <button id="start_game">ゲーム開始</button>
+  <table id="board"></table>
+  <form id="move_form">
+    row:<input type="number" id="row" min="0" max="2">
+    col:<input type="number" id="col" min="0" max="2">
+    size:<input type="number" id="size" min="0" max="2">
+    <button type="submit">手を打つ</button>
+  </form>
+  <p>勝者: <span id="winner"></span></p>
+</section>
+<script src="main.js"></script>
+</body>
+</html>
