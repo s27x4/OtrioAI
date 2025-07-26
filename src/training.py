@@ -5,7 +5,7 @@ import torch
 from torch import optim
 
 from .mcts import MCTS
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 from .network import OtrioNet, policy_value, state_to_tensor, loss_fn
 from .augmentation import augment_samples
 from .otrio import GameState, Player, Move
@@ -136,7 +136,7 @@ def self_play_parallel(
             resign_threshold=resign_threshold,
         )
 
-    with ThreadPoolExecutor() as ex:
+    with ProcessPoolExecutor() as ex:
         for data in ex.map(worker, range(num_games)):
             results.extend(data)
     return results
